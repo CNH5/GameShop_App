@@ -1,0 +1,30 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto">
+    <group android:checkableBehavior="single">
+        <item
+                android:id="@+id/menu_game"
+                android:enabled="true"
+                android:icon="@mipmap/game"
+                android:title="游戏"
+
+                app:showAsAction="ifRoom" />
+        <item
+                android:id="@+id/menu_service"
+                android:enabled="true"
+                android:icon="@mipmap/customer_service"
+                android:title="客服"
+                app:showAsAction="ifRoom" />
+        <item
+                android:id="@+id/menu_pack"
+                android:enabled="true"
+                android:icon="@mipmap/bag"
+                android:title="回收袋"
+                app:showAsAction="ifRoom" />
+        <item
+                android:id="@+id/menu_user"
+                android:enabled="true"
+                android:icon="@mipmap/user"
+                android:title="我的"
+                app:showAsAction="ifRoom" />
+    </group>
+</menu>
