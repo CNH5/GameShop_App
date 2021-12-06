@@ -1,20 +1,23 @@
 package com.example.gameshop.fragment;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.EditText;
 import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.example.gameshop.Constants;
 import com.example.gameshop.R;
+import com.example.gameshop.activity.GameActivity;
 import com.example.gameshop.adapter.GameListAdapter;
 import com.example.gameshop.pojo.Game;
 import com.example.gameshop.utils.RequestUtil;
+import com.example.gameshop.utils.ResponseUtil;
+import com.google.android.material.tabs.TabLayout;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import okhttp3.Call;
@@ -31,11 +34,13 @@ import java.util.Objects;
  * Use the {@link GameListFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class GameListFragment extends Fragment {
+public class GameListFragment extends Fragment implements View.OnClickListener {
     private static final String TAG = "GameListFragment";
     private RecyclerView lvGameList;
+    private EditText searchText;
+    private TabLayout platformTab;
     private List<Game> gameList;
-    private String[] platforms = new String[]{"NS", "PS"};
+    private final String[] platforms = new String[]{"NS", "PS"};
     private int page = 1;
 
 
@@ -43,53 +48,14 @@ public class GameListFragment extends Fragment {
         // Required empty public constructor
     }
 
-    public void initList() {
-        new RequestUtil()
-                .get()
-                .url(Constants.GAME_LIST_URL)
-                .addQueryParameter("page", page)
-                .addQueryParameter("platform", platforms[0])
-                .then(this::getListSuccess)
-                .error((call, e) -> {
 
-                })
-                .request();
-    }
-
-    private void getListSuccess(Call call, Response response) throws IOException {
-        ResponseBody body = response.body();
-        assert body != null;
-        JSONObject data = JSON.parseObject(body.string());
-        switch (data.getString("code")) {
-            case "200": {
-                Type type = new TypeToken<List<Game>>() {
-                }.getType();
-
-                gameList = new Gson().fromJson(data.getString("data"), type);
-                setAdapter();
-                break;
-            }
-            case "400": {
-                // TODO:获取失败，做提示
-                Log.w(TAG, data.getString("msg"));
-                break;
-            }
-            case "500": {
-                // TODO:后台出错,做提示
-                Log.e(TAG, data.getString("msg"));
-                break;
-            }
-            default: {
-                //不知道。。
-            }
+    @Override
+    public void onClick(View v) {
+        int vid = v.getId();
+        if (vid == R.id.search_bt) {
+            // 点击搜索按钮
+            initList(platformTab.getSelectedTabPosition());
         }
-    }
-
-    public void setAdapter() {
-        Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
-            GameListAdapter adapter = new GameListAdapter(getActivity(), gameList);
-            lvGameList.setAdapter(adapter);
-        });
     }
 
     public static GameListFragment newInstance() {
@@ -100,18 +66,99 @@ public class GameListFragment extends Fragment {
         return fragment;
     }
 
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        initList();
+        initList(0);
     }
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_game_list, container, false);
+
         lvGameList = view.findViewById(R.id.game_list);
         lvGameList.setLayoutManager(new LinearLayoutManager(getActivity()));
+        searchText = view.findViewById(R.id.search_text);
+
+        view.findViewById(R.id.search_bt).setOnClickListener(this);
+        platformTab = view.findViewById(R.id.top_tab);
+
+        initTab();
+
         return view;
+    }
+
+    private void initList(int id) {
+        new RequestUtil()
+                .get()
+                .url(Constants.GAME_LIST_URL)
+                .addQueryParameter("page", page)
+                .addQueryParameter("platform", platforms[id])
+                .then(this::getListSuccess)
+                .error(this::getListError)
+                .request();
+    }
+
+    private void getListSuccess(Call call, Response response) throws IOException {
+        new ResponseUtil(response)
+                .success((msg, dataJSON) -> {
+                    Type type = new TypeToken<List<Game>>() {
+                    }.getType();
+                    // 设置list
+                    gameList = new Gson().fromJson(dataJSON, type);
+                    // 设置适配器
+                    setAdapter();
+                })
+                .fail((msg, dataJSON) -> {
+                    // TODO:获取失败，做提示
+                    Log.w(TAG, msg);
+                })
+                .error((msg, dataJSON) -> {
+                    // TODO:后台出错,做提示
+                    Log.e(TAG, msg);
+                })
+                .handle();
+    }
+
+    private void setAdapter() {
+        GameListAdapter adapter = new GameListAdapter(getActivity(), gameList);
+        adapter.setOnGameClick(game -> {
+            // 当item被点击，跳转到游戏详细信息界面
+            Intent intent = new Intent(getActivity(), GameActivity.class);
+            // 传被点击的id
+            intent.putExtra("id", game.getId());
+            Objects.requireNonNull(getActivity()).startActivity(intent);
+        });
+        Objects.requireNonNull(getActivity()).runOnUiThread(() -> lvGameList.setAdapter(adapter));
+    }
+
+    private void getListError(Call call, IOException e) {
+        // TODO:提示错误
+        e.printStackTrace();
+    }
+
+    private void initTab() {
+        for (String platform : platforms) {
+            platformTab.addTab(platformTab.newTab().setText(platform));
+        }
+        platformTab.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                initList(tab.getPosition());
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+
+            }
+        });
     }
 }

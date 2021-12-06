@@ -1,5 +1,6 @@
 package com.example.gameshop.adapter;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -28,13 +29,13 @@ public class GameListAdapter extends RecyclerView.Adapter<GameListAdapter.ViewHo
         this.gameList = data;
     }
 
-    private onGameClick onGameClick;
+    private OnGameClick onGameClick;
 
-    public void setonGameClick(onGameClick onGameClick) {
+    public void setOnGameClick(OnGameClick onGameClick) {
         this.onGameClick = onGameClick;
     }
 
-    public interface onGameClick {
+    public interface OnGameClick {
         void use(Game game);
     }
 
@@ -49,15 +50,22 @@ public class GameListAdapter extends RecyclerView.Adapter<GameListAdapter.ViewHo
         return new ViewHolder(LayoutInflater.from(mContext).inflate(R.layout.item_game, parent, false));
     }
 
+    @SuppressLint("SetTextI18n")
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Game game = gameList.get(position);
         // 加载游戏封面图片
-        Glide.with(mContext).load(Constants.IMAGE_URL + game.getCover_image()).into(holder.cover_image);
+        String url;
+        if (game.getCover_image() == null) {
+            url = Constants.IMAGE_URL + "notfound.jpg";
+        } else {
+            url = Constants.IMAGE_URL + game.getCover_image();
+        }
+        Glide.with(mContext).load(url).into(holder.cover_image);
         // 设置游戏名称
         holder.name.setText(game.getName());
         // 设置价格
-        holder.price.setText(game.getPrice());
+        holder.price.setText(game.getPrice() + "元");
         // 设置每个item的tag
         holder.setItemTag(position);
     }

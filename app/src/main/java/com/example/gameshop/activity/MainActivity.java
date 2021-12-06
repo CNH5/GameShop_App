@@ -18,12 +18,13 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private final List<Fragment> fragments = Arrays.asList(
-            new GameListFragment(),
+            GameListFragment.newInstance(),
             new ServiceFragment(),
             new PackFragment(),
             new UserFragment()
     );
     private ViewPager2 mainView;
+    private BottomNavigationView mainBottomNav;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initBottomNav() {
-        BottomNavigationView mainBottomNav = findViewById(R.id.main_bottom_nav);
+        mainBottomNav = findViewById(R.id.main_bottom_nav);
         mainBottomNav.setOnNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.menu_game) {
