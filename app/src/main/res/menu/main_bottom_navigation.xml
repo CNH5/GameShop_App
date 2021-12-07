@@ -4,7 +4,7 @@
         <item
                 android:id="@+id/menu_game"
                 android:enabled="true"
-                android:icon="@mipmap/game"
+                android:icon="@mipmap/controller"
                 android:title="游戏"
 
                 app:showAsAction="ifRoom" />

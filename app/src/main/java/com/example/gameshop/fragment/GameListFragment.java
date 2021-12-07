@@ -37,7 +37,6 @@ import java.util.Objects;
 public class GameListFragment extends Fragment implements View.OnClickListener {
     private static final String TAG = "GameListFragment";
     private RecyclerView lvGameList;
-    private EditText searchText;
     private TabLayout platformTab;
     private List<Game> gameList;
     private final String[] platforms = new String[]{"NS", "PS"};
@@ -52,9 +51,9 @@ public class GameListFragment extends Fragment implements View.OnClickListener {
     @Override
     public void onClick(View v) {
         int vid = v.getId();
-        if (vid == R.id.search_bt) {
-            // 点击搜索按钮
-            initList(platformTab.getSelectedTabPosition());
+        if (vid == R.id.search) {
+            // 点击搜索按钮,进入搜索界面
+            Log.d(TAG,"点击了搜索按钮");
         }
     }
 
@@ -81,9 +80,8 @@ public class GameListFragment extends Fragment implements View.OnClickListener {
 
         lvGameList = view.findViewById(R.id.game_list);
         lvGameList.setLayoutManager(new LinearLayoutManager(getActivity()));
-        searchText = view.findViewById(R.id.search_text);
 
-        view.findViewById(R.id.search_bt).setOnClickListener(this);
+        view.findViewById(R.id.search).setOnClickListener(this);
         platformTab = view.findViewById(R.id.top_tab);
 
         initTab();

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+        android:insetLeft="30dp"
+        android:insetRight="30dp">
+    <shape android:shape="rectangle">
+        <solid android:color="#e5e5e5" />
+        <size android:height="1dp" />
+    </shape>
+    <!--
+       android:insetLeft="@dimen/px30dp"  距离左侧30dp
+       android:insetRight="@dimen/px30dp" 距离右侧30dp
+       android:color="@color/bg_mian"  分割线颜色
+       android:height="@dimen/px1dp"  分割线高度
+       -->
+</inset>

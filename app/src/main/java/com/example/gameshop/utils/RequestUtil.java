@@ -1,5 +1,7 @@
 package com.example.gameshop.utils;
 
+
+import android.content.Context;
 import android.util.Log;
 import androidx.annotation.NonNull;
 import com.example.gameshop.Constants;
@@ -20,7 +22,7 @@ public class RequestUtil {
     private HttpUrl.Builder urlBuilder;
     private final FormBody.Builder formBuilder = new FormBody.Builder();
     public static final Gson GSON = new Gson();
-    private boolean post = false;
+    private boolean isPost = false;
     private Success success;
     private Error error;
 
@@ -36,7 +38,7 @@ public class RequestUtil {
      * 设置请求类型为get
      */
     public RequestUtil get() {
-        this.post = false;
+        this.isPost = false;
         this.reqBuild.get();
         return this;
     }
@@ -45,7 +47,7 @@ public class RequestUtil {
      * 设置请求类型为post
      */
     public RequestUtil post() {
-        this.post = true;
+        this.isPost = true;
         return this;
     }
 
@@ -91,14 +93,30 @@ public class RequestUtil {
     }
 
     /**
+     * 设置请求携带token,需要在设置post或get之后使用
+     */
+    public RequestUtil setToken(Context context) {
+        // 获取分享文件?好像是这么叫的
+        SharedDataUtil util = new SharedDataUtil(context);
+
+        reqBuild.addHeader("token", util.getToken());
+        // 携带token,必定需要带上账号
+        if (isPost) {
+            formBuilder.add("account", util.getAccount());
+        } else {
+            urlBuilder.addQueryParameter("account", util.getAccount());
+        }
+        return this;
+    }
+
+    /**
      * 发送请求
      */
     public void request() {
-        // TODO:从本地读取token
         HttpUrl url = urlBuilder.build();
-        reqBuild.addHeader("token", "").url(url);
+        reqBuild.url(url);
         Log.d("request url", url.toString());
-        if (post) {
+        if (isPost) {
             reqBuild.post(formBuilder.build());
         }
         Call call = new OkHttpClient().newCall(reqBuild.build());

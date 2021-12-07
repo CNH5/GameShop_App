@@ -5,4 +5,16 @@
     <string name="game_list_img_desc">游戏封面图片</string>
     <string name="search_hint_text">搜一搜</string>
     <string name="search_bt_text">搜索</string>
+    <string name="game_service_text">客服</string>
+    <string name="game_add_bag_text">加入回收袋</string>
+    <string name="game_transaction_text">交易</string>
+    <string name="game_star_text">收藏</string>
+    <string name="game_declare_title">游戏说明:</string>
+    <string name="game_declare">购买时版本随机发，不支持7天无理由退款</string>
+    <string name="recycle_process_title">回收流程:</string>
+    <string name="price_chart_title">价格走势:</string>
+
+    <string name="account">vaj0ebi2utv8b</string>
+    <string name="token">bae6iug9bai4e</string>
+    <string name="shared_preferences_file_name">cxy5rxr3yjp8oji9pdx</string>
 </resources>

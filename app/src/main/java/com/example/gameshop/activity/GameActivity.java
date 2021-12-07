@@ -8,10 +8,13 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
+import androidx.core.widget.NestedScrollView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.bumptech.glide.Glide;
 import com.example.gameshop.Constants;
 import com.example.gameshop.R;
 import com.example.gameshop.pojo.Game;
+import com.example.gameshop.toast.ImageTextToast;
 import com.example.gameshop.utils.RequestUtil;
 import com.example.gameshop.utils.ResponseUtil;
 import com.google.gson.Gson;
@@ -32,31 +35,66 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
     private Game game;
     private Banner picturesBanner;
     private TextView titleView;
-    private TextView name;
-    private TextView price;
+    private TextView nameView;
+    private TextView priceView;
+
+    private interface AfterGetInfo {
+        void doAfter();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
         initParams();
-        setGameInfo();
+        setGameInfo(null);
         setOnClickListener();
+        initScrollView();
     }
+
 
     @Override
     public void onClick(View v) {
         int vid = v.getId();
         if (vid == R.id.back_bt) {
+            // 左上角的返回按钮
             finish();
+        } else if (vid == R.id.add_bag_bt) {
+            // 右下角的添加到回收袋按钮
+            onAddBagBtClick();
+        } else if (vid == R.id.transaction_bt) {
+            // 右下角的交易按钮
+            onTransactionBtClick();
+        } else if (vid == R.id.service_bt) {
+            // 左下角客服按钮
+            new ImageTextToast(this).error("功能未实现");
+        } else if (vid == R.id.star_bt) {
+            // 左下角收藏按钮
+            new ImageTextToast(this).error("功能未实现");
+        } else if (vid == R.id.more_bt) {
+            // 右上角更多按钮
+            new ImageTextToast(this).error("功能未实现");
+        } else if (vid == R.id.close_bt) {
+            // 右上角的关闭按钮,好像没必要?
+            new ImageTextToast(this).error("功能未实现");
         }
     }
 
+    // 设置按键监听
     void setOnClickListener() {
         findViewById(R.id.back_bt).setOnClickListener(this);
+        findViewById(R.id.add_bag_bt).setOnClickListener(this);
+        findViewById(R.id.star_bt).setOnClickListener(this);
+        findViewById(R.id.service_bt).setOnClickListener(this);
+        findViewById(R.id.more_bt).setOnClickListener(this);
+        findViewById(R.id.close_bt).setOnClickListener(this);
+        findViewById(R.id.service_bt).setOnClickListener(this);
+        findViewById(R.id.transaction_bt).setOnClickListener(this);
     }
 
+    // 初始化参数
     private void initParams() {
+        // 获取之前的界面传递过来的id
         id = getIntent().getLongExtra("id", -1);
         picturesBanner = findViewById(R.id.pictures_banner);
         picturesBanner
@@ -67,44 +105,58 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
                         Glide.with(context).load(path).into(imageView);
                     }
                 }).setDelayTime(3000);
+        // 找view
         titleView = findViewById(R.id.title);
-        name = findViewById(R.id.game_name);
-        price = findViewById(R.id.game_price);
+        nameView = findViewById(R.id.game_name);
+        priceView = findViewById(R.id.game_price);
+        // 回收流程的图片
+        Glide.with(this).load(Constants.IMAGE_URL + "process.png").into((ImageView) findViewById(R.id.process));
     }
 
-    private void setGameInfo() {
+    // 获取数据
+    private void setGameInfo(AfterGetInfo after) {
         new RequestUtil()
                 .get()
                 .url(Constants.GAME_INFO_URL + "/" + id)
-                .then(this::getGameSuccess)
+                .then((call, response) -> {
+                    getGameSuccess(response, after);
+                })
                 .error(this::getGameError)
                 .request();
     }
 
-    private void getGameSuccess(Call call, Response response) throws IOException {
+    // 获取成功
+    private void getGameSuccess(Response response, AfterGetInfo after) throws IOException {
         new ResponseUtil(response)
                 .success((msg, dataJSON) -> {
                     // 设置游戏信息
                     game = new Gson().fromJson(dataJSON, Game.class);
                     // 设置需要游戏信息的ui
                     initView();
+                    // 获取成功之后的额外操作
+                    if (after != null) {
+                        after.doAfter();
+                    }
                 })
                 .fail((msg, dataJSON) -> {
-                    // TODO:获取失败，做提示
-                    Log.w(TAG, msg);
+                    Log.e(TAG, dataJSON);
+                    new ImageTextToast(this).fail(msg);
                 })
                 .error((msg, dataJSON) -> {
-                    // TODO:后台出错,做提示
-                    Log.e(TAG, msg);
+                    Log.e(TAG, dataJSON);
+                    new ImageTextToast(this).error(msg);
                 })
                 .handle();
     }
 
+    // 获取出错
     private void getGameError(Call call, IOException e) {
-        // TODO:提示请求出错
+        // 提示请求出错
         e.printStackTrace();
+        new ImageTextToast(this).error("获取数据失败");
     }
 
+    // 获取数据之后，将数据显示到界面中
     @SuppressLint("SetTextI18n")
     private void initView() {
         List<String> imageUrls = new ArrayList<>();
@@ -112,12 +164,43 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
         for (String pic : game.getImages()) {
             imageUrls.add(Constants.IMAGE_URL + pic);
         }
-        // 设置数据对应的位置
+        // 设置数据要渲染的地方
         runOnUiThread(() -> {
             picturesBanner.setImages(imageUrls).start();
             titleView.setText(game.getName());
-            name.setText(game.getName());
-            price.setText(game.getPrice() + "元");
+            nameView.setText(game.getName());
+            priceView.setText(game.getPrice() + "元");
+            initHistoryPrice();
         });
+    }
+
+    // 设置表格
+    void initHistoryPrice() {
+    }
+
+    private void initScrollView() {
+        NestedScrollView scrollView = findViewById(R.id.scrollView);
+        SwipeRefreshLayout swipe = findViewById(R.id.swipe);
+        swipe.setColorSchemeResources(R.color.blue);
+        // 防止下拉刷新组件和刷新组件冲突
+        scrollView.setOnScrollChangeListener((View.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+            swipe.setEnabled(scrollY == 0);
+        });
+        // 下拉时获取数据
+        swipe.setOnRefreshListener(() -> {
+            setGameInfo(() -> {
+                swipe.setRefreshing(false);
+            });
+        });
+    }
+
+    // 点击添加到购物车按钮
+    public void onAddBagBtClick() {
+
+    }
+
+    // 点击交易按钮
+    public void onTransactionBtClick() {
+
     }
 }

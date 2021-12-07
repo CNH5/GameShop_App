@@ -6,7 +6,7 @@ package com.example.gameshop;
  */
 public class Constants {
     // 后端接口地址
-    public static final String BASE_URL = "http://10.34.21.68:8100";
+    public static final String BASE_URL = "http://192.168.23.1:8100";
     // 后端图片地址
     public static final String IMAGE_URL = BASE_URL + "/image/";
     // 获取游戏列表的URL
