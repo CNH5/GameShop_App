@@ -3,18 +3,18 @@ package com.example.gameshop.fragment;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.EditText;
 import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.example.gameshop.Constants;
+import com.example.gameshop.config.URL;
 import com.example.gameshop.R;
 import com.example.gameshop.activity.GameActivity;
 import com.example.gameshop.adapter.GameListAdapter;
 import com.example.gameshop.pojo.Game;
+import com.example.gameshop.toast.ImageTextToast;
 import com.example.gameshop.utils.RequestUtil;
 import com.example.gameshop.utils.ResponseUtil;
 import com.google.android.material.tabs.TabLayout;
@@ -22,7 +22,6 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import okhttp3.Call;
 import okhttp3.Response;
-import okhttp3.ResponseBody;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -53,7 +52,7 @@ public class GameListFragment extends Fragment implements View.OnClickListener {
         int vid = v.getId();
         if (vid == R.id.search) {
             // 点击搜索按钮,进入搜索界面
-            Log.d(TAG,"点击了搜索按钮");
+            Log.d(TAG, "点击了搜索按钮");
         }
     }
 
@@ -90,9 +89,9 @@ public class GameListFragment extends Fragment implements View.OnClickListener {
     }
 
     private void initList(int id) {
-        new RequestUtil()
+        new RequestUtil(getActivity())
                 .get()
-                .url(Constants.GAME_LIST_URL)
+                .url(URL.GAME_LIST_URL)
                 .addQueryParameter("page", page)
                 .addQueryParameter("platform", platforms[id])
                 .then(this::getListSuccess)
@@ -111,11 +110,11 @@ public class GameListFragment extends Fragment implements View.OnClickListener {
                     setAdapter();
                 })
                 .fail((msg, dataJSON) -> {
-                    // TODO:获取失败，做提示
+                    new ImageTextToast(getActivity()).fail(msg);
                     Log.w(TAG, msg);
                 })
                 .error((msg, dataJSON) -> {
-                    // TODO:后台出错,做提示
+                    new ImageTextToast(getActivity()).error(msg);
                     Log.e(TAG, msg);
                 })
                 .handle();
@@ -134,8 +133,8 @@ public class GameListFragment extends Fragment implements View.OnClickListener {
     }
 
     private void getListError(Call call, IOException e) {
-        // TODO:提示错误
         e.printStackTrace();
+        new ImageTextToast(getActivity()).error("获取数据失败");
     }
 
     private void initTab() {

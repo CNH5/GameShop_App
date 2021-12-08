@@ -5,7 +5,6 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author sheng
@@ -35,7 +34,7 @@ public class Game implements Serializable {
     private List<String> images;
 
     @SerializedName("history_price")
-    private List<Map<String, String>> history_price;
+    private List<Price> history_price;
 
     @SerializedName("cover_image")
     private String cover_image;

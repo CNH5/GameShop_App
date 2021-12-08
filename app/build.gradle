@@ -29,8 +29,7 @@ android {
 }
 
 dependencies {
-    // 表格
-    implementation 'com.github.lecho:hellocharts-android:v1.5.8'
+    implementation 'com.github.lecho:hellocharts-library:1.5.8@aar'
     // design库
     implementation 'com.android.support:design:'
     // 图片轮播图
@@ -47,7 +46,6 @@ dependencies {
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     compileOnly 'org.projectlombok:lombok:1.18.18'
     annotationProcessor 'org.projectlombok:lombok:1.18.18'
-    testImplementation 'junit:junit:'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 }

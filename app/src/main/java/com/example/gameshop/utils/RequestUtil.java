@@ -4,7 +4,7 @@ package com.example.gameshop.utils;
 import android.content.Context;
 import android.util.Log;
 import androidx.annotation.NonNull;
-import com.example.gameshop.Constants;
+import com.example.gameshop.config.URL;
 import com.google.gson.Gson;
 import okhttp3.*;
 
@@ -21,7 +21,7 @@ public class RequestUtil {
     private final Request.Builder reqBuild = new Request.Builder();
     private HttpUrl.Builder urlBuilder;
     private final FormBody.Builder formBuilder = new FormBody.Builder();
-    public static final Gson GSON = new Gson();
+    private final SharedDataUtil util;
     private boolean isPost = false;
     private Success success;
     private Error error;
@@ -32,6 +32,10 @@ public class RequestUtil {
 
     public interface Error {
         void catchError(Call call, IOException e);
+    }
+
+    public RequestUtil(Context context) {
+        util = new SharedDataUtil(context);
     }
 
     /**
@@ -55,24 +59,24 @@ public class RequestUtil {
      * 设置url
      */
     public RequestUtil url(String url) {
-        this.urlBuilder = Objects.requireNonNull(HttpUrl.parse(Constants.BASE_URL + url)).newBuilder();
+        this.urlBuilder = Objects.requireNonNull(HttpUrl.parse(URL.BASE_URL + url)).newBuilder();
         return this;
     }
 
     /**
-     * get请求添加参数
+     * get请求添加参数,需要先设置url
      */
     public RequestUtil addQueryParameter(@NonNull String name, Object value) {
         // 直接转String会出问题...
-        urlBuilder.addQueryParameter(name, value instanceof String ? (String) value : GSON.toJson(value));
+        urlBuilder.addQueryParameter(name, value instanceof String ? (String) value : new Gson().toJson(value));
         return this;
     }
 
     /**
-     * post请求添加参数
+     * post请求添加表单类型参数
      */
-    public RequestUtil addRequestParameter(@NonNull String name, Object value) {
-        formBuilder.add(name, value instanceof String ? (String) value : GSON.toJson(value));
+    public RequestUtil addFormParameter(@NonNull String name, Object value) {
+        formBuilder.add(name, value instanceof String ? (String) value : new Gson().toJson(value));
         return this;
     }
 
@@ -93,18 +97,18 @@ public class RequestUtil {
     }
 
     /**
-     * 设置请求携带token,需要在设置post或get之后使用
+     * 设置请求携带token,需要在设置url和post或get之后使用
      */
-    public RequestUtil setToken(Context context) {
-        // 获取分享文件?好像是这么叫的
-        SharedDataUtil util = new SharedDataUtil(context);
-
-        reqBuild.addHeader("token", util.getToken());
-        // 携带token,必定需要带上账号
-        if (isPost) {
-            formBuilder.add("account", util.getAccount());
-        } else {
-            urlBuilder.addQueryParameter("account", util.getAccount());
+    public RequestUtil setToken() {
+        // 设置请求头
+        if (util.getToken() != null) {
+            reqBuild.addHeader("token", util.getToken());
+            // 携带token,必定需要带上账号
+            if (isPost) {
+                formBuilder.add("account", util.getAccount());
+            } else {
+                urlBuilder.addQueryParameter("account", util.getAccount());
+            }
         }
         return this;
     }
@@ -131,6 +135,13 @@ public class RequestUtil {
 
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                // 如果返回的头中有token，应当更新token
+                String token = response.header("token");
+                if (token != null) {
+                    Log.d("save token", token);
+                    util.setToken(token);
+                }
+
                 if (success != null) {
                     success.response(call, response);
                 }

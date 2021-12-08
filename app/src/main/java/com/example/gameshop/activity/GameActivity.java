@@ -2,25 +2,30 @@ package com.example.gameshop.activity;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import androidx.core.widget.NestedScrollView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.bumptech.glide.Glide;
-import com.example.gameshop.Constants;
+import com.example.gameshop.config.URL;
 import com.example.gameshop.R;
+import com.example.gameshop.charts.HistoryPriceChart;
 import com.example.gameshop.pojo.Game;
 import com.example.gameshop.toast.ImageTextToast;
 import com.example.gameshop.utils.RequestUtil;
 import com.example.gameshop.utils.ResponseUtil;
+import com.example.gameshop.utils.SharedDataUtil;
 import com.google.gson.Gson;
 import com.youth.banner.Banner;
 import com.youth.banner.BannerConfig;
 import com.youth.banner.loader.ImageLoader;
+import lecho.lib.hellocharts.view.LineChartView;
 import okhttp3.Call;
 import okhttp3.Response;
 
@@ -37,6 +42,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
     private TextView titleView;
     private TextView nameView;
     private TextView priceView;
+    private LineChartView chart;
 
     private interface AfterGetInfo {
         void doAfter();
@@ -109,15 +115,16 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
         titleView = findViewById(R.id.title);
         nameView = findViewById(R.id.game_name);
         priceView = findViewById(R.id.game_price);
+        chart = findViewById(R.id.history_price);
         // 回收流程的图片
-        Glide.with(this).load(Constants.IMAGE_URL + "process.png").into((ImageView) findViewById(R.id.process));
+        Glide.with(this).load(URL.IMAGE_URL + "process.png").into((ImageView) findViewById(R.id.process));
     }
 
     // 获取数据
     private void setGameInfo(AfterGetInfo after) {
-        new RequestUtil()
+        new RequestUtil(this)
                 .get()
-                .url(Constants.GAME_INFO_URL + "/" + id)
+                .url(URL.GAME_INFO_URL + "/" + id)
                 .then((call, response) -> {
                     getGameSuccess(response, after);
                 })
@@ -162,7 +169,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
         List<String> imageUrls = new ArrayList<>();
         // 把获取的图片转换成真正的url
         for (String pic : game.getImages()) {
-            imageUrls.add(Constants.IMAGE_URL + pic);
+            imageUrls.add(URL.IMAGE_URL + pic);
         }
         // 设置数据要渲染的地方
         runOnUiThread(() -> {
@@ -170,12 +177,11 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
             titleView.setText(game.getName());
             nameView.setText(game.getName());
             priceView.setText(game.getPrice() + "元");
-            initHistoryPrice();
-        });
-    }
 
-    // 设置表格
-    void initHistoryPrice() {
+            new HistoryPriceChart(chart, game.getHistory_price(), Float.parseFloat(game.getPrice()))
+                    .line("#409EFF")
+                    .init();
+        });
     }
 
     private void initScrollView() {
@@ -196,11 +202,38 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
 
     // 点击添加到购物车按钮
     public void onAddBagBtClick() {
+        if (new SharedDataUtil(this).notLogin()) {
+            // 没登陆，跳转到登陆界面
+            Intent intent = new Intent(this, LoginActivity.class);
+            startActivityForResult(intent, LoginActivity.CODE);
+        }
 
     }
 
     // 点击交易按钮
     public void onTransactionBtClick() {
+        if (new SharedDataUtil(this).notLogin()) {
+            // 没登陆，跳转到登陆界面
+            Intent intent = new Intent(this, LoginActivity.class);
+            startActivityForResult(intent, LoginActivity.CODE);
+        }
 
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == RESULT_OK) {
+            switch (requestCode) {
+                case LoginActivity.CODE:
+                    System.out.println(new SharedDataUtil(this).getToken());
+                    break;
+                case 4:
+
+                    break;
+                default:
+
+            }
+        }
     }
 }

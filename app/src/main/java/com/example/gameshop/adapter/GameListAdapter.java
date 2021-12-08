@@ -10,7 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
-import com.example.gameshop.Constants;
+import com.example.gameshop.config.URL;
 import com.example.gameshop.R;
 import com.example.gameshop.pojo.Game;
 
@@ -57,9 +57,9 @@ public class GameListAdapter extends RecyclerView.Adapter<GameListAdapter.ViewHo
         // 加载游戏封面图片
         String url;
         if (game.getCover_image() == null) {
-            url = Constants.IMAGE_URL + "notfound.jpg";
+            url = URL.IMAGE_URL + "notfound.jpg";
         } else {
-            url = Constants.IMAGE_URL + game.getCover_image();
+            url = URL.IMAGE_URL + game.getCover_image();
         }
         Glide.with(mContext).load(url).into(holder.cover_image);
         // 设置游戏名称

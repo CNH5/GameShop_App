@@ -27,8 +27,8 @@ public class SharedDataUtil {
         editor = spFile.edit();
     }
 
-    public boolean isLogin() {
-        return getToken() != null;
+    public boolean notLogin() {
+        return getToken() == null;
     }
 
     public String getAccount() {
@@ -45,9 +45,11 @@ public class SharedDataUtil {
 
     public void setAccount(String account) {
         editor.putString(accountKey, account);
+        editor.apply();
     }
 
     public void setToken(String token) {
         editor.putString(tokenKey, token);
+        editor.apply();
     }
 }
