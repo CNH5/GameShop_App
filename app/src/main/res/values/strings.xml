@@ -25,4 +25,20 @@
     <string name="forget_password_text">忘记密码?</string>
     <string name="register_bt_text">注 册</string>
     <string name="register_page_title">注册</string>
+    <string name="recycle_switch_text">回收</string>
+    <string name="buy_switch_text">购买</string>
+    <string name="switch_desc">添加类型:</string>
+    <string name="num_text">数量</string>
+    <string name="num_default_value">1</string>
+    <string name="confirm_bt_text">确 定</string>
+    <string name="switch_tips_default_text">添加到：回收</string>
+    <string name="user_topic">我的</string>
+    <string name="user_order_title">我的订单</string>
+    <string name="user_info_change_tips">修改个人资料</string>
+    <string name="user_more_title">更多服务</string>
+    <string name="user_arp">公告</string>
+    <string name="test_text">测试</string>
+    <string name="logout_bt_text">退出登录</string>
+    <string name="config_title">设置</string>
+    <string name="no_more">暂无更多</string>
 </resources>

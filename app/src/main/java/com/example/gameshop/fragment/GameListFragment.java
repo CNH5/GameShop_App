@@ -2,6 +2,7 @@ package com.example.gameshop.fragment;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Looper;
 import android.util.Log;
 import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
@@ -25,6 +26,7 @@ import okhttp3.Response;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -91,7 +93,7 @@ public class GameListFragment extends Fragment implements View.OnClickListener {
     private void initList(int id) {
         new RequestUtil(getActivity())
                 .get()
-                .url(URL.GAME_LIST_URL)
+                .url(URL.GAME_LIST)
                 .addQueryParameter("page", page)
                 .addQueryParameter("platform", platforms[id])
                 .then(this::getListSuccess)
@@ -110,11 +112,15 @@ public class GameListFragment extends Fragment implements View.OnClickListener {
                     setAdapter();
                 })
                 .fail((msg, dataJSON) -> {
+                    Looper.prepare();
                     new ImageTextToast(getActivity()).fail(msg);
+                    Looper.loop();
                     Log.w(TAG, msg);
                 })
                 .error((msg, dataJSON) -> {
+                    Looper.prepare();
                     new ImageTextToast(getActivity()).error(msg);
+                    Looper.loop();
                     Log.e(TAG, msg);
                 })
                 .handle();
@@ -144,6 +150,8 @@ public class GameListFragment extends Fragment implements View.OnClickListener {
         platformTab.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
+                gameList = new ArrayList<>();
+                setAdapter();
                 initList(tab.getPosition());
             }
 

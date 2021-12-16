@@ -31,9 +31,14 @@ public class HistoryPriceChart {
             mAxisXValues.add(new AxisValue(i).setLabel(data.get(i).getDate().substring(5)));
         }
 
-        mPointValues.add(new PointValue(mPointValues.size(), now_price));
+
         Date date = new Date();
-        mAxisXValues.add(new AxisValue(mAxisXValues.size()).setLabel(date.getMonth() + 1 + "-" + (date.getDate() + 1)));
+        String today = date.getMonth() + 1 + "-" + date.getDate();
+
+        if (!data.get(data.size()-1).getDate().substring(5).equals(today)){
+            mPointValues.add(new PointValue(mPointValues.size(), now_price));
+            mAxisXValues.add(new AxisValue(mAxisXValues.size()).setLabel(today));
+        }
     }
 
     public HistoryPriceChart line(String colorString) {

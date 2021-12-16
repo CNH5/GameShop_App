@@ -6,17 +6,25 @@ package com.example.gameshop.config;
  */
 public class URL {
     // 后端接口地址
-    public static final String BASE_URL = "http://192.168.23.1:8100";
+    public static final String BASE = "http://192.168.23.1:8100";
     // 后端图片地址
-    public static final String IMAGE_URL = BASE_URL + "/image/";
-    // 获取游戏列表的URL
-    public static final String GAME_LIST_URL = "/game/info/list";
-    // 获取游戏详细信息的URL
-    public static final String GAME_INFO_URL = "/game/info";
-    // 用于检验token的URL
-    public static final String CHECK_URL = "/user/check";
-    // 登录用的URL
-    public static final String LOGIN_URL = "/user/login";
-    // 注册用的URL
-    public static final String REGISTER_URL = "/user/register";
+    public static final String IMAGE = BASE + "/image/";
+    // 获取游戏列表
+    public static final String GAME_LIST = "/game/list";
+    // 获取游戏详细信息
+    public static final String GAME_INFO = "/game/info/";
+    // 检验token
+    public static final String CHECK = "/user/check";
+    // 登录URL
+    public static final String LOGIN = "/user/login";
+    // 注册URL
+    public static final String REGISTER = "/user/register";
+    // 添加到回收袋
+    public static final String ADD_PACK = "/recycle_pack/add";
+    // 订单添加的URL
+    public static final String ORDER_ADD = "/user/order/add";
+    // 获取用户信息
+    public static final String USER_INFO = "/user/info";
+    // 修改用户信息
+    public static final String USER_INFO_CHANGE = "/user/info/update";
 }

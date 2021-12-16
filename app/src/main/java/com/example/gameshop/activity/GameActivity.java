@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -17,6 +18,7 @@ import com.example.gameshop.config.URL;
 import com.example.gameshop.R;
 import com.example.gameshop.charts.HistoryPriceChart;
 import com.example.gameshop.pojo.Game;
+import com.example.gameshop.popupWindow.RecyclePopupWindow;
 import com.example.gameshop.toast.ImageTextToast;
 import com.example.gameshop.utils.RequestUtil;
 import com.example.gameshop.utils.ResponseUtil;
@@ -117,14 +119,14 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
         priceView = findViewById(R.id.game_price);
         chart = findViewById(R.id.history_price);
         // 回收流程的图片
-        Glide.with(this).load(URL.IMAGE_URL + "process.png").into((ImageView) findViewById(R.id.process));
+        Glide.with(this).load(URL.IMAGE + "process.png").into((ImageView) findViewById(R.id.process));
     }
 
     // 获取数据
     private void setGameInfo(AfterGetInfo after) {
         new RequestUtil(this)
                 .get()
-                .url(URL.GAME_INFO_URL + "/" + id)
+                .url(URL.GAME_INFO + id)
                 .then((call, response) -> {
                     getGameSuccess(response, after);
                 })
@@ -169,7 +171,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
         List<String> imageUrls = new ArrayList<>();
         // 把获取的图片转换成真正的url
         for (String pic : game.getImages()) {
-            imageUrls.add(URL.IMAGE_URL + pic);
+            imageUrls.add(URL.IMAGE + pic);
         }
         // 设置数据要渲染的地方
         runOnUiThread(() -> {
@@ -206,8 +208,16 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
             // 没登陆，跳转到登陆界面
             Intent intent = new Intent(this, LoginActivity.class);
             startActivityForResult(intent, LoginActivity.CODE);
-        }
 
+        } else {
+            RecyclePopupWindow window = new RecyclePopupWindow(this, game);
+            window.showAtLocation(
+                    getWindow().getDecorView(),
+                    Gravity.BOTTOM,
+                    0, 0
+            );
+            window.setBackground();
+        }
     }
 
     // 点击交易按钮
@@ -217,7 +227,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
             Intent intent = new Intent(this, LoginActivity.class);
             startActivityForResult(intent, LoginActivity.CODE);
         }
-
+        // TODO:弹出交易dialog
     }
 
     @Override
@@ -226,7 +236,9 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
         if (resultCode == RESULT_OK) {
             switch (requestCode) {
                 case LoginActivity.CODE:
-                    System.out.println(new SharedDataUtil(this).getToken());
+                    // 登陆成功
+                    assert data != null;
+                    new ImageTextToast(this).success(data.getStringExtra("msg"));
                     break;
                 case 4:
 

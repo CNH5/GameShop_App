@@ -44,8 +44,6 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
         registerBT = findViewById(R.id.register_bt);
         iSwitch = findViewById(R.id.password_visible_switch);
 
-        accountET.setText(new SharedDataUtil(this).getAccount());
-
         accountET.setOnFocusChangeListener(mOnFocusHindHintListener);
         passwordET.setOnFocusChangeListener(mOnFocusHindHintListener);
     }
@@ -87,7 +85,7 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
             finish();
         } else if (vid == R.id.password_visible_switch) {
             switchPasswordVisible(passwordVisible = !passwordVisible, iSwitch, passwordET);
-        } else if (vid == R.id.login_bt) {
+        } else if (vid == R.id.register_bt) {
             submit();
         } else {
             new ImageTextToast(this).error("未知按钮");
@@ -97,7 +95,7 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
     private void submit() {
         new RequestUtil(this)
                 .post()
-                .url(URL.REGISTER_URL)
+                .url(URL.REGISTER)
                 .addFormParameter("account", accountET.getText().toString())
                 .addFormParameter("password", passwordET.getText().toString())
                 .then((call, response) -> {
@@ -115,7 +113,9 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
                 .success((msg, dataJSON) -> {
                     new SharedDataUtil(this).setAccount(accountET.getText().toString());
                     // 给登录界面返回注册成功
-                    Intent intent = new Intent().putExtra("msg", msg);
+                    Intent intent = new Intent()
+                            .putExtra("msg", msg)
+                            .putExtra("account", accountET.getText().toString());
                     setResult(RESULT_OK, intent);
                     // 回到上一页，直接关掉就行了
                     finish();

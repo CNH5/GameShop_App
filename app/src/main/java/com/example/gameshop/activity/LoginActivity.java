@@ -109,7 +109,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
     private void submit() {
         new RequestUtil(this)
                 .post()
-                .url(URL.LOGIN_URL)
+                .url(URL.LOGIN)
                 .addFormParameter("account", accountET.getText().toString())
                 .addFormParameter("password", passwordET.getText().toString())
                 .then((call, response) -> {
@@ -150,6 +150,9 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK && requestCode == RegisterActivity.CODE) {
             assert data != null;
+            // 刚注册完，需要清空已经填写的账号密码
+            accountET.setText("");
+            passwordET.setText("");
             new ImageTextToast(this).success(data.getStringExtra("msg"));
         }
     }

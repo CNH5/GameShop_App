@@ -49,7 +49,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:textSize="17sp"
-                                android:textColor="@color/black"
+                                android:textColor="#303133"
                                 app:layout_constraintTop_toTopOf="parent"
                                 app:layout_constraintBottom_toBottomOf="parent"
                                 app:layout_constraintStart_toEndOf="@+id/back_bt" />
@@ -145,7 +145,7 @@
                         <TextView
                                 android:id="@+id/game_name"
                                 android:textSize="17sp"
-                                android:textColor="@color/black"
+                                android:textColor="#303133"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 app:layout_constraintTop_toTopOf="parent"
@@ -179,7 +179,7 @@
                         <TextView
                                 android:text="@string/game_declare_title"
                                 android:textSize="19sp"
-                                android:textColor="@color/black"
+                                android:textColor="#303133"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="10dp"
@@ -208,7 +208,7 @@
                         <TextView
                                 android:text="@string/price_chart_title"
                                 android:textSize="19sp"
-                                android:textColor="@color/black"
+                                android:textColor="#303133"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="10dp"
@@ -239,7 +239,7 @@
                         <TextView
                                 android:text="@string/recycle_process_title"
                                 android:textSize="19sp"
-                                android:textColor="@color/black"
+                                android:textColor="#303133"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="10dp"
@@ -362,8 +362,8 @@
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        android:layout_marginStart="15dp"
-                        android:layout_marginEnd="15dp" />
+                        android:layout_marginStart="25dp"
+                        android:layout_marginEnd="25dp" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -385,8 +385,8 @@
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        android:layout_marginStart="15dp"
-                        android:layout_marginEnd="15dp" />
+                        android:layout_marginStart="25dp"
+                        android:layout_marginEnd="25dp" />
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>

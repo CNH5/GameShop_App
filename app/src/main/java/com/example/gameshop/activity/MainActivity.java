@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
             GameListFragment.newInstance(),
             new ServiceFragment(),
             new PackFragment(),
-            new UserFragment()
+            UserFragment.newInstance()
     );
     private ViewPager2 mainView;
 
@@ -44,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
     private void checkLogin() {
         new RequestUtil(this)
                 .get()
-                .url(URL.CHECK_URL)
+                .url(URL.CHECK)
                 .setToken()
                 .then((call, response) -> {
                     new ResponseUtil(response)

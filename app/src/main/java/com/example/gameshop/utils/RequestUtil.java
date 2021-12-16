@@ -59,7 +59,7 @@ public class RequestUtil {
      * 设置url
      */
     public RequestUtil url(String url) {
-        this.urlBuilder = Objects.requireNonNull(HttpUrl.parse(URL.BASE_URL + url)).newBuilder();
+        this.urlBuilder = Objects.requireNonNull(HttpUrl.parse(URL.BASE + url)).newBuilder();
         return this;
     }
 
