@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.EditText;
@@ -30,6 +31,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
     private View loginBT;
     private boolean passwordVisible = false;
     private ImageView iSwitch;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -128,7 +130,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                 .success((msg, dataJSON) -> {
                     new SharedDataUtil(this).setAccount(accountET.getText().toString());
                     // 给上一级页面返回登录成功
-                    setResult(RESULT_OK, new Intent().putExtra("msg", msg));
+                    setResult(RESULT_OK, new Intent().putExtra("msg", msg).putExtra("route", getIntent().getIntExtra("route", 0)));
                     // 回到上一页，直接关掉就行了
                     finish();
                 })

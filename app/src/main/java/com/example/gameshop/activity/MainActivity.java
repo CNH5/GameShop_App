@@ -1,7 +1,9 @@
 package com.example.gameshop.activity;
 
+import android.content.Intent;
 import android.util.Log;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import androidx.fragment.app.Fragment;
@@ -31,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
             UserFragment.newInstance()
     );
     private ViewPager2 mainView;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,10 +94,39 @@ public class MainActivity extends AppCompatActivity {
                 mainView.setCurrentItem(2);
 
             } else if (id == R.id.menu_user) {
-                mainView.setCurrentItem(3);
+                if (new SharedDataUtil(this).notLogin()) {
+                    Intent intent = new Intent(this, LoginActivity.class).putExtra("route", 3);
+                    startActivityForResult(intent, LoginActivity.CODE);
+                } else {
+                    mainView.setCurrentItem(3);
+                }
             }
             return true;
         });
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == RESULT_OK) {
+            switch (requestCode) {
+                case ConfigActivity.CODE:
+                    Intent intent = new Intent(this, LoginActivity.class);
+                    startActivityForResult(intent, LoginActivity.CODE);
+                    mainView.setCurrentItem(0);
+                    break;
+                case LoginActivity.CODE:
+                    // 要根据用户的点击来判断跳转到哪个
+                    assert data != null;
+                    mainView.setCurrentItem(data.getIntExtra("route", 0));
+                    new ImageTextToast(this).success(data.getStringExtra("msg"));
+                    break;
+                case GameActivity.CODE:
+                    // 这里就应该更新购物车的商品数量
+                    break;
+                default:
+
+            }
+        }
+    }
 }

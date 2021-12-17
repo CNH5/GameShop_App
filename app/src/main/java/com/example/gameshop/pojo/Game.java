@@ -33,6 +33,9 @@ public class Game implements Serializable {
     @SerializedName("images")
     private List<String> images;
 
+    @SerializedName("tags")
+    private List<String> tags;
+
     @SerializedName("history_price")
     private List<Price> history_price;
 

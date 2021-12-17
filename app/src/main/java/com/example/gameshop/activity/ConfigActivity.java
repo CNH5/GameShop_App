@@ -15,7 +15,7 @@ public class ConfigActivity extends AppCompatActivity implements View.OnClickLis
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_config);
 
-        if (null == new SharedDataUtil(this).getToken()) {
+        if (new SharedDataUtil(this).notLogin()) {
             findViewById(R.id.logout_bt).setVisibility(View.GONE);
         } else {
             findViewById(R.id.no_more).setVisibility(View.GONE);

@@ -40,5 +40,11 @@
     <string name="test_text">测试</string>
     <string name="logout_bt_text">退出登录</string>
     <string name="config_title">设置</string>
-    <string name="no_more">暂无更多</string>
+    <string name="no_more">暂无更多,登陆后可以退出登录</string>
+    <string name="wait_send_text">待发货</string>
+    <string name="wait_receive_text">待收货</string>
+    <string name="advice_bt_text">投诉建议</string>
+    <string name="kd_bt_text">寄快递</string>
+    <string name="cn_bt_text">菜鸟裹裹</string>
+    <string name="all_order_bt_text"><![CDATA[全部订单 >]]></string>
 </resources>

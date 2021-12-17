@@ -37,7 +37,7 @@
 
             <TextView
                     android:id="@+id/search_text"
-                    android:textColor="#C3C1C1"
+                    android:textColor="#909399"
                     android:text="@string/search_hint_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
