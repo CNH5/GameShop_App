@@ -25,7 +25,7 @@ public class Game implements Serializable {
     private int stock;
 
     @SerializedName("price")
-    private String price;
+    private Double price;
 
     @SerializedName("status")
     private String status;

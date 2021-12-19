@@ -3,6 +3,7 @@ package com.example.gameshop.activity;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -28,27 +29,23 @@ import com.youth.banner.Banner;
 import com.youth.banner.BannerConfig;
 import com.youth.banner.loader.ImageLoader;
 import lecho.lib.hellocharts.view.LineChartView;
-import okhttp3.Call;
-import okhttp3.Response;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class GameActivity extends AppCompatActivity implements View.OnClickListener {
     public static final int CODE = 2;
     private static final String TAG = "GameActivity";
-    private long id;
     private Game game;
     private Banner picturesBanner;
     private TextView titleView;
     private TextView nameView;
     private TextView priceView;
     private LineChartView chart;
-
-    private interface AfterGetInfo {
-        void doAfter();
-    }
+    private RequestUtil getGameRequest;
+    private RequestUtil addRecyclePackRequest;
+    private ResponseUtil getGameResponse;
+    private ResponseUtil addRecyclePackResponse;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,21 +67,27 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
         } else if (vid == R.id.add_bag_bt) {
             // 右下角的添加到回收袋按钮
             onAddBagBtClick();
+
         } else if (vid == R.id.transaction_bt) {
             // 右下角的交易按钮
             onTransactionBtClick();
+
         } else if (vid == R.id.service_bt) {
             // 左下角客服按钮
             new ImageTextToast(this).error("功能未实现");
+
         } else if (vid == R.id.star_bt) {
             // 左下角收藏按钮
             new ImageTextToast(this).error("功能未实现");
+
         } else if (vid == R.id.more_bt) {
             // 右上角更多按钮
             new ImageTextToast(this).error("功能未实现");
+
         } else if (vid == R.id.close_bt) {
             // 右上角的关闭按钮,好像没必要?
             new ImageTextToast(this).error("功能未实现");
+
         }
     }
 
@@ -103,7 +106,8 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
     // 初始化参数
     private void initParams() {
         // 获取之前的界面传递过来的id
-        id = getIntent().getLongExtra("id", -1);
+        long id = getIntent().getLongExtra("id", -1);
+
         picturesBanner = findViewById(R.id.pictures_banner);
         picturesBanner
                 .setBannerStyle(BannerConfig.CIRCLE_INDICATOR)
@@ -118,51 +122,69 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
         nameView = findViewById(R.id.game_name);
         priceView = findViewById(R.id.game_price);
         chart = findViewById(R.id.history_price);
-        // 回收流程的图片
-        Glide.with(this).load(URL.IMAGE + "process.png").into((ImageView) findViewById(R.id.process));
-    }
 
-    // 获取数据
-    private void setGameInfo(AfterGetInfo after) {
-        new RequestUtil(this)
-                .get()
-                .url(URL.GAME_INFO + id)
-                .then((call, response) -> {
-                    getGameSuccess(response, after);
-                })
-                .error(this::getGameError)
-                .request();
-    }
-
-    // 获取成功
-    private void getGameSuccess(Response response, AfterGetInfo after) throws IOException {
-        new ResponseUtil(response)
+        // 获取游戏信息的请求
+        getGameRequest = new RequestUtil(this).get().url(URL.GAME_INFO + id);
+        // 获取信息请求的回复
+        getGameResponse = new ResponseUtil()
                 .success((msg, dataJSON) -> {
                     // 设置游戏信息
                     game = new Gson().fromJson(dataJSON, Game.class);
                     // 设置需要游戏信息的ui
                     initView();
-                    // 获取成功之后的额外操作
-                    if (after != null) {
-                        after.doAfter();
-                    }
                 })
                 .fail((msg, dataJSON) -> {
                     Log.e(TAG, dataJSON);
+                    Looper.prepare();
                     new ImageTextToast(this).fail(msg);
+                    Looper.loop();
                 })
                 .error((msg, dataJSON) -> {
                     Log.e(TAG, dataJSON);
+                    Looper.prepare();
                     new ImageTextToast(this).error(msg);
+                    Looper.loop();
+                });
+        // 添加购物车的请求
+        addRecyclePackRequest = new RequestUtil(this)
+                .url(URL.ADD_PACK).post().setToken().addFormParameter("id", id);
+        // 添加到购物车之后的操作
+        addRecyclePackResponse = new ResponseUtil()
+                .success((msg, dataJSON) -> {
+                    Looper.prepare();
+                    new ImageTextToast(this).success(msg);
+                    Looper.loop();
                 })
-                .handle();
+                .fail((msg, dataJSON) -> {
+                    Looper.prepare();
+                    new ImageTextToast(this).fail(msg);
+                    Looper.loop();
+                })
+                .error((msg, dataJSON) -> {
+                    Looper.prepare();
+                    new ImageTextToast(this).error(msg);
+                    Looper.loop();
+                });
+        // 设置回收流程的图片
+        Glide.with(this).load(URL.IMAGE + "process.png").into((ImageView) findViewById(R.id.process));
     }
 
-    // 获取出错
-    private void getGameError(Call call, IOException e) {
-        // 提示请求出错
-        e.printStackTrace();
-        new ImageTextToast(this).error("获取数据失败");
+    // 获取数据
+    private void setGameInfo(ResponseUtil.AfterSuccess after) {
+        getGameRequest
+                .then((call, response) -> {
+                    getGameResponse.setResponse(response)
+                            .afterSuccess(after)
+                            .handle();
+                })
+                .error((call, e) -> {
+                    e.printStackTrace();
+
+                    Looper.prepare();
+                    new ImageTextToast(this).error("获取数据失败");
+                    Looper.loop();
+                })
+                .request();
     }
 
     // 获取数据之后，将数据显示到界面中
@@ -180,7 +202,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
             nameView.setText(game.getName());
             priceView.setText(game.getPrice() + "元");
 
-            new HistoryPriceChart(chart, game.getHistory_price(), Float.parseFloat(game.getPrice()))
+            new HistoryPriceChart(chart, game.getHistory_price(), game.getPrice().floatValue())
                     .line("#409EFF")
                     .init();
         });
@@ -190,7 +212,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
         NestedScrollView scrollView = findViewById(R.id.scrollView);
         SwipeRefreshLayout swipe = findViewById(R.id.swipe);
         swipe.setColorSchemeResources(R.color.blue);
-        // 防止下拉刷新组件和刷新组件冲突
+        // 防止下拉刷新组件和滑动组件冲突
         scrollView.setOnScrollChangeListener((View.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
             swipe.setEnabled(scrollY == 0);
         });
@@ -210,12 +232,36 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
             startActivityForResult(intent, LoginActivity.CODE);
 
         } else {
-            RecyclePopupWindow window = new RecyclePopupWindow(this, game);
+            // 设置调出窗口
+            RecyclePopupWindow window = new RecyclePopupWindow(this, game)
+                    .setBuyTipText("添加到：购买")
+                    .setRecycleTipText("添加到：回收")
+                    .setSwitchDescText("添加类型：")
+                    .confirmBtText("添加到回收袋");
+            // 点击确认按钮之后提交添加请求
+            window.setOnSubmit((type, num) -> {
+                addRecyclePackRequest
+                        .addFormParameter("num", num)
+                        .addFormParameter("type", type)
+                        .then((call, response) -> {
+                            addRecyclePackResponse
+                                    .setResponse(response)
+                                    .afterSuccess(window::dismiss)
+                                    .handle();
+                        })
+                        .error((call, e) -> {
+                            e.printStackTrace();
+                            new ImageTextToast(this).error("网络异常");
+                        })
+                        .request();
+            });
+            // 设置出现位置
             window.showAtLocation(
                     getWindow().getDecorView(),
                     Gravity.BOTTOM,
                     0, 0
             );
+            // 设置背景
             window.setBackground();
         }
     }
@@ -226,8 +272,30 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
             // 没登陆，跳转到登陆界面
             Intent intent = new Intent(this, LoginActivity.class);
             startActivityForResult(intent, LoginActivity.CODE);
+
+        } else {
+            // 设置调出窗口
+            RecyclePopupWindow window = new RecyclePopupWindow(this, game)
+                    .setBuyTipText("购买:" + game.getName())
+                    .setRecycleTipText("回收:" + game.getName())
+                    .setSwitchDescText("交易类型：")
+                    .transaction(true);
+            // 点击确认按钮之后跳转到订单生成界面
+            window.setOnSubmit((type, num) -> {
+                Intent intent = new Intent(this, OrderSubmitActivity.class)
+                        .putExtra("type", type)
+                        .putExtra("num", num);
+                startActivityForResult(intent, OrderSubmitActivity.CODE);
+            });
+            // 设置出现位置
+            window.showAtLocation(
+                    getWindow().getDecorView(),
+                    Gravity.BOTTOM,
+                    0, 0
+            );
+            // 设置背景
+            window.setBackground();
         }
-        // TODO:弹出交易dialog
     }
 
     @Override

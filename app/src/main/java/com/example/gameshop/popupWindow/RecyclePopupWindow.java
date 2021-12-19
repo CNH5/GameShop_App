@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
@@ -16,26 +15,73 @@ import com.example.gameshop.R;
 import com.example.gameshop.config.URL;
 import com.example.gameshop.pojo.Game;
 import com.example.gameshop.toast.ImageTextToast;
-import com.example.gameshop.utils.RequestUtil;
-import com.example.gameshop.utils.ResponseUtil;
-import okhttp3.Response;
-
-import java.io.IOException;
 
 /**
  * @author sheng
  * @date 2021/12/8 6:20
  */
 public class RecyclePopupWindow extends PopupWindow implements View.OnClickListener {
-    private static final String TAG = "recycle_pack_game_add";
     private final Context mContext;
     private final Game game;
     private final View v;
     private int num = 1;
     private boolean isRecycle = true;
-    private View recycle_switch_bt;
-    private View buy_switch_bt;
-    private TextView num_view;
+    private View recycleSwitchBt;
+    private View buySwitchBt;
+    private TextView numView;
+    private TextView switchDesc;
+    private TextView confirmBtText;
+    private TextView tipsTextView;
+    private TextView recycleSwitchTextView;
+    private TextView buySwitchTextView;
+    private TextView expectPriceView;
+    private View recycleTipsView;
+    private OnSubmit onSubmit;
+    private String buyTipText;
+    private String recycleTipText;
+    private boolean transaction = false;
+
+    public RecyclePopupWindow setBuyTipText(String buyTipText) {
+        this.buyTipText = buyTipText;
+        if (!isRecycle) {
+            tipsTextView.setText(buyTipText);
+        }
+        return this;
+    }
+
+    public RecyclePopupWindow setRecycleTipText(String recycleTipText) {
+        this.recycleTipText = recycleTipText;
+        if (isRecycle) {
+            tipsTextView.setText(recycleTipText);
+        }
+        return this;
+    }
+
+    public RecyclePopupWindow confirmBtText(String text) {
+        this.confirmBtText.setText(text);
+        return this;
+    }
+
+    public RecyclePopupWindow transaction(boolean transaction) {
+        this.transaction = transaction;
+        expectPriceView.setText(String.valueOf((game.getPrice() - 15)));
+        recycleTipsView.setVisibility(View.VISIBLE);
+        return this;
+    }
+
+    // 设置类型的描述文本
+    public RecyclePopupWindow setSwitchDescText(String text) {
+        this.switchDesc.setText(text);
+        return this;
+    }
+
+    public interface OnSubmit {
+        void submit(String type, int num);
+    }
+
+    public void setOnSubmit(OnSubmit onSubmit) {
+        this.onSubmit = onSubmit;
+    }
 
 
     @SuppressLint("InflateParams")
@@ -50,12 +96,19 @@ public class RecyclePopupWindow extends PopupWindow implements View.OnClickListe
     }
 
     private void initParams() {
-        buy_switch_bt = v.findViewById(R.id.buy_switch);
-        recycle_switch_bt = v.findViewById(R.id.recycle_switch);
-        num_view = v.findViewById(R.id.num);
+        buySwitchBt = v.findViewById(R.id.buy_switch);
+        recycleSwitchBt = v.findViewById(R.id.recycle_switch);
+        numView = v.findViewById(R.id.num);
+        switchDesc = v.findViewById(R.id.switch_desc);
+        confirmBtText = v.findViewById(R.id.confirm_bt_text);
+        tipsTextView = v.findViewById(R.id.tips_text);
+        recycleSwitchTextView = v.findViewById(R.id.recycle_switch_text);
+        buySwitchTextView = v.findViewById(R.id.buy_switch_text);
+        recycleTipsView = v.findViewById(R.id.recycle_tips);
+        expectPriceView = v.findViewById(R.id.expect_price);
 
-        buy_switch_bt.setOnClickListener(this);
-        recycle_switch_bt.setOnClickListener(this);
+        buySwitchBt.setOnClickListener(this);
+        recycleSwitchBt.setOnClickListener(this);
         v.findViewById(R.id.num_plus_bt).setOnClickListener(this);
         v.findViewById(R.id.num_reduce_bt).setOnClickListener(this);
         v.findViewById(R.id.confirm_bt).setOnClickListener(this);
@@ -69,24 +122,28 @@ public class RecyclePopupWindow extends PopupWindow implements View.OnClickListe
     }
 
     private void setSwitch() {
-        TextView tips_text_view = v.findViewById(R.id.tips_text);
-        TextView recycle_switch_text_view = v.findViewById(R.id.recycle_switch_text);
-        TextView buy_switch_text_view = v.findViewById(R.id.buy_switch_text);
-
         if (isRecycle) {
-            buy_switch_text_view.setTextColor(Color.parseColor("#909399"));
-            buy_switch_bt.setBackgroundColor(Color.WHITE);
+            buySwitchTextView.setTextColor(Color.parseColor("#909399"));
+            buySwitchBt.setBackgroundColor(Color.WHITE);
 
-            recycle_switch_text_view.setTextColor(Color.WHITE);
-            recycle_switch_bt.setBackgroundResource(R.drawable.shape_corner6);
-            tips_text_view.setText("添加到：回收");
+            recycleSwitchTextView.setTextColor(Color.WHITE);
+            recycleSwitchBt.setBackgroundResource(R.drawable.shape_corner6);
+            tipsTextView.setText(recycleTipText);
+
+            if (transaction) {
+                recycleTipsView.setVisibility(View.VISIBLE);
+            }
         } else {
-            recycle_switch_text_view.setTextColor(Color.parseColor("#909399"));
-            recycle_switch_bt.setBackgroundColor(Color.WHITE);
+            recycleSwitchTextView.setTextColor(Color.parseColor("#909399"));
+            recycleSwitchBt.setBackgroundColor(Color.WHITE);
 
-            buy_switch_text_view.setTextColor(Color.WHITE);
-            buy_switch_bt.setBackgroundResource(R.drawable.shape_corner6);
-            tips_text_view.setText("添加到：购买");
+            buySwitchTextView.setTextColor(Color.WHITE);
+            buySwitchBt.setBackgroundResource(R.drawable.shape_corner6);
+            tipsTextView.setText(buyTipText);
+
+            if (transaction) {
+                recycleTipsView.setVisibility(View.INVISIBLE);
+            }
         }
     }
 
@@ -109,6 +166,8 @@ public class RecyclePopupWindow extends PopupWindow implements View.OnClickListe
         setFocusable(true);
         // 设置进出动画
         setAnimationStyle(R.style.bottom_up_window);
+        // 设置开关的状态
+        setSwitch();
     }
 
     @Override
@@ -125,51 +184,27 @@ public class RecyclePopupWindow extends PopupWindow implements View.OnClickListe
                 setSwitch();
             }
         } else if (vid == R.id.num_plus_bt) {
-            num_view.setText(String.valueOf(++num));
+            numView.setText(String.valueOf(++num));
 
+            if (transaction && isRecycle) {
+                expectPriceView.setText(String.valueOf(num * (game.getPrice() - 15)));
+            }
         } else if (vid == R.id.num_reduce_bt) {
             if (num == 1) {
                 new ImageTextToast(mContext).fail("不能更少了哦~");
             } else {
-                num_view.setText(String.valueOf(--num));
+                numView.setText(String.valueOf(--num));
+                if (transaction && isRecycle) {
+                    expectPriceView.setText(String.valueOf(num * (game.getPrice() - 15)));
+                }
             }
         } else if (vid == R.id.confirm_bt) {
-            confirm();
+            if (onSubmit != null) {
+                onSubmit.submit(isRecycle ? "回收" : "购买", num);
+            }
         } else if (vid == R.id.close_bt) {
             dismiss();
         }
-    }
-
-    private void confirm() {
-        new RequestUtil(mContext)
-                .url(URL.ADD_PACK)
-                .post()
-                .setToken()
-                .addFormParameter("id", game.getId())
-                .addFormParameter("num", num)
-                .addFormParameter("type", isRecycle ? "回收" : "出售")
-                .then((call, response) -> {
-                    onResponseSuccess(response);
-                })
-                .error((call, e) -> {
-                    e.printStackTrace();
-                    new ImageTextToast(mContext).error("网络异常");
-                })
-                .request();
-    }
-
-    private void onResponseSuccess(Response response) throws IOException {
-        new ResponseUtil(response)
-                .success((msg, dataJSON) -> {
-                    Log.d(TAG, msg);
-                })
-                .fail((msg, dataJSON) -> {
-                    Log.w(TAG, msg);
-                })
-                .error((msg, dataJSON) -> {
-                    Log.e(TAG, msg);
-                })
-                .handle();
     }
 
 

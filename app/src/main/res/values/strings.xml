@@ -47,4 +47,8 @@
     <string name="kd_bt_text">寄快递</string>
     <string name="cn_bt_text">菜鸟裹裹</string>
     <string name="all_order_bt_text"><![CDATA[全部订单 >]]></string>
+    <string name="expectAwardText">预计可获得:</string>
+    <string name="price">元</string>
+    <string name="deduction_price">15元</string>
+    <string name="deduction_text">平台验货费用：</string>
 </resources>

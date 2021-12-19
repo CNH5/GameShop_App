@@ -12,7 +12,8 @@
             android:supportsRtl="true"
             android:theme="@style/Theme.Design.Light.NoActionBar"
             android:usesCleartextTraffic="true">
-        <activity android:name=".activity.OrderListActivity"></activity>
+        <activity android:name=".activity.OrderSubmitActivity"></activity>
+        <activity android:name=".activity.OrderListActivity" />
         <activity android:name=".activity.UserInfoActivity" />
         <activity android:name=".activity.SearchActivity" />
         <activity android:name=".activity.ConfigActivity" />

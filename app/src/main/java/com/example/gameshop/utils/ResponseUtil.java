@@ -14,10 +14,15 @@ import java.io.IOException;
  * @date 2021/12/5 15:04
  */
 public class ResponseUtil {
-    private final Response response;
+    private Response response;
     private Success success;
     private Fail fail;
     private Error error;
+    private AfterSuccess afterSuccess;
+
+    public interface AfterSuccess {
+        void after();
+    }
 
     public interface Success {
         void onSuccess(String msg, String dataJSON);
@@ -31,8 +36,17 @@ public class ResponseUtil {
         void onError(String msg, String dataJSON);
     }
 
+    public ResponseUtil() {
+
+    }
+
     public ResponseUtil(Response response) {
         this.response = response;
+    }
+
+    public ResponseUtil setResponse(Response response) {
+        this.response = response;
+        return this;
     }
 
     /**
@@ -40,6 +54,11 @@ public class ResponseUtil {
      */
     public ResponseUtil success(Success success) {
         this.success = success;
+        return this;
+    }
+
+    public ResponseUtil afterSuccess(AfterSuccess afterSuccess) {
+        this.afterSuccess = afterSuccess;
         return this;
     }
 
@@ -72,6 +91,10 @@ public class ResponseUtil {
                 // 请求成功
                 if (success != null) {
                     success.onSuccess(data.getString("msg"), data.getString("data"));
+                }
+                // 请求成功之后执行的操作
+                if (afterSuccess != null) {
+                    afterSuccess.after();
                 }
                 break;
             }
