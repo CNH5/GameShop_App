@@ -25,6 +25,12 @@ public class URL {
     public static final String ORDER_ADD = "/user/order/add";
     // 获取用户信息
     public static final String USER_INFO = "/user/info";
+    // 获取回收袋的游戏
+    public static final String RECYCLE_PACK_GAMES_LIST = "/recycle_pack/list";
+    // 选中游戏
+    public static final String RECYCLE_PACK_SELECTED_GAME = "/recycle_pack/change";
+    // 修改数量
+    public static final String RECYCLE_PACK_UPDATE_NUM = "/recycle_pack/update";
     // 修改用户信息
     public static final String USER_INFO_CHANGE = "/user/info/update";
 }

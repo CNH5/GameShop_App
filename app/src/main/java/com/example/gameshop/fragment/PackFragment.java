@@ -1,11 +1,17 @@
 package com.example.gameshop.fragment;
 
 import android.os.Bundle;
+import android.util.Log;
 import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import androidx.recyclerview.widget.RecyclerView;
 import com.example.gameshop.R;
+import com.example.gameshop.config.URL;
+import com.example.gameshop.toast.ImageTextToast;
+import com.example.gameshop.utils.RequestUtil;
+import com.example.gameshop.utils.ResponseUtil;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -13,51 +19,59 @@ import com.example.gameshop.R;
  * create an instance of this fragment.
  */
 public class PackFragment extends Fragment {
-
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    private static final String TAG = "PackFragment";
+    private RecyclerView recycleGameListView;
+    private RequestUtil getGameListRequest;
+    private ResponseUtil getGameListResponse;
+    private ImageTextToast toast;
+    private final String type = "回收";
 
     public PackFragment() {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment PackFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static PackFragment newInstance(String param1, String param2) {
-        PackFragment fragment = new PackFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
+    public static PackFragment newInstance() {
+        return new PackFragment();
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
+        getGameListRequest = new RequestUtil(getActivity()).url(URL.RECYCLE_PACK_GAMES_LIST).get().setToken();
+        getGameListResponse = new ResponseUtil()
+                .success((msg, dataJSON) -> {
+                    Log.d("recycle pack data", dataJSON);
+                })
+                .fail((msg, dataJSON) -> {
+                    Log.w(TAG, "fail: " + msg);
+                    toast.fail(msg);
+                })
+                .error((msg, dataJSON) -> {
+                    Log.e(TAG, "error: " + msg);
+                    toast.error(msg);
+                });
+        toast = new ImageTextToast(getActivity());
+    }
+
+    public void getGameList() {
+        getGameListRequest
+                .addQueryParameter("type", type)
+                .then((call, response) -> {
+                    getGameListResponse.setResponse(response).handle();
+                })
+                .error((call, e) -> {
+                    toast.fail("网络异常");
+                    e.printStackTrace();
+                })
+                .request();
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_pack, container, false);
+        View view = inflater.inflate(R.layout.fragment_pack, container, false);
+        recycleGameListView = view.findViewById(R.id.recycle_pack_games);
+        return view;
     }
 }

@@ -2,7 +2,6 @@ package com.example.gameshop.fragment;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Looper;
 import android.util.Log;
 import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
@@ -41,6 +40,7 @@ public class GameListFragment extends Fragment implements View.OnClickListener {
     private TabLayout platformTab;
     private List<Game> gameList;
     private final String[] platforms = new String[]{"NS", "PS"};
+    private ImageTextToast toast;
     private int page = 1;
 
 
@@ -70,6 +70,7 @@ public class GameListFragment extends Fragment implements View.OnClickListener {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        toast = new ImageTextToast(getActivity());
         initList(0);
     }
 
@@ -112,16 +113,12 @@ public class GameListFragment extends Fragment implements View.OnClickListener {
                     setAdapter();
                 })
                 .fail((msg, dataJSON) -> {
-                    Looper.prepare();
-                    new ImageTextToast(getActivity()).fail(msg);
-                    Looper.loop();
                     Log.w(TAG, msg);
+                    toast.success(msg);
                 })
                 .error((msg, dataJSON) -> {
-                    Looper.prepare();
-                    new ImageTextToast(getActivity()).error(msg);
-                    Looper.loop();
                     Log.e(TAG, msg);
+                    toast.error(msg);
                 })
                 .handle();
     }

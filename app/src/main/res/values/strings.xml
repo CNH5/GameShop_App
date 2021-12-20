@@ -51,4 +51,8 @@
     <string name="price">元</string>
     <string name="deduction_price">15元</string>
     <string name="deduction_text">平台验货费用：</string>
+    <string name="recycle_pack_title">回收袋</string>
+    <string name="recycle_manage_bt_text">管理</string>
+    <string name="all_selected_text">全选</string>
+    <string name="settlement_bt_text">结算</string>
 </resources>

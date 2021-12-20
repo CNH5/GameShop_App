@@ -3,7 +3,6 @@ package com.example.gameshop.activity;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Looper;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -36,6 +35,7 @@ import java.util.List;
 public class GameActivity extends AppCompatActivity implements View.OnClickListener {
     public static final int CODE = 2;
     private static final String TAG = "GameActivity";
+    private ImageTextToast toast;
     private Game game;
     private Banner picturesBanner;
     private TextView titleView;
@@ -107,6 +107,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
     private void initParams() {
         // 获取之前的界面传递过来的id
         long id = getIntent().getLongExtra("id", -1);
+        toast = new ImageTextToast(this);
 
         picturesBanner = findViewById(R.id.pictures_banner);
         picturesBanner
@@ -134,16 +135,12 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
                     initView();
                 })
                 .fail((msg, dataJSON) -> {
-                    Log.e(TAG, dataJSON);
-                    Looper.prepare();
-                    new ImageTextToast(this).fail(msg);
-                    Looper.loop();
+                    Log.w(TAG, dataJSON);
+                    toast.fail(msg);
                 })
                 .error((msg, dataJSON) -> {
                     Log.e(TAG, dataJSON);
-                    Looper.prepare();
-                    new ImageTextToast(this).error(msg);
-                    Looper.loop();
+                    toast.error(msg);
                 });
         // 添加购物车的请求
         addRecyclePackRequest = new RequestUtil(this)
@@ -151,19 +148,15 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
         // 添加到购物车之后的操作
         addRecyclePackResponse = new ResponseUtil()
                 .success((msg, dataJSON) -> {
-                    Looper.prepare();
-                    new ImageTextToast(this).success(msg);
-                    Looper.loop();
+                    toast.success(msg);
                 })
                 .fail((msg, dataJSON) -> {
-                    Looper.prepare();
-                    new ImageTextToast(this).fail(msg);
-                    Looper.loop();
+                    toast.fail(msg);
+                    Log.w(TAG, dataJSON);
                 })
                 .error((msg, dataJSON) -> {
-                    Looper.prepare();
-                    new ImageTextToast(this).error(msg);
-                    Looper.loop();
+                    toast.error(msg);
+                    Log.e(TAG, dataJSON);
                 });
         // 设置回收流程的图片
         Glide.with(this).load(URL.IMAGE + "process.png").into((ImageView) findViewById(R.id.process));
@@ -179,10 +172,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
                 })
                 .error((call, e) -> {
                     e.printStackTrace();
-
-                    Looper.prepare();
-                    new ImageTextToast(this).error("获取数据失败");
-                    Looper.loop();
+                    toast.error("获取数据失败");
                 })
                 .request();
     }
@@ -246,12 +236,14 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
                         .then((call, response) -> {
                             addRecyclePackResponse
                                     .setResponse(response)
-                                    .afterSuccess(window::dismiss)
+                                    .afterSuccess(() -> {
+                                        runOnUiThread(window::dismiss);
+                                    })
                                     .handle();
                         })
                         .error((call, e) -> {
                             e.printStackTrace();
-                            new ImageTextToast(this).error("网络异常");
+                            toast.error("网络异常");
                         })
                         .request();
             });

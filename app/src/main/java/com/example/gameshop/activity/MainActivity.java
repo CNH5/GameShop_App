@@ -29,11 +29,12 @@ public class MainActivity extends AppCompatActivity {
     private final List<Fragment> fragments = Arrays.asList(
             GameListFragment.newInstance(),
             new ServiceFragment(),
-            new PackFragment(),
+            PackFragment.newInstance(),
             UserFragment.newInstance()
     );
     private ViewPager2 mainView;
-
+    private RequestUtil checkLoginRequest;
+    private ImageTextToast toast;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,21 +46,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkLogin() {
-        new RequestUtil(this)
-                .get()
-                .url(URL.CHECK)
-                .setToken()
+        checkLoginRequest
                 .then((call, response) -> {
                     new ResponseUtil(response)
                             .fail((msg, dataJSON) -> {
                                 Log.d(TAG, msg);
+                                toast.fail("登录已过期!");
                                 new SharedDataUtil(this).cleanToken();
                             })
                             .handle();
                 })
                 .error((call, e) -> {
                     e.printStackTrace();
-                    new ImageTextToast(this).error("网络异常");
+                    toast.error("网络异常");
                 })
                 .request();
     }
@@ -78,6 +77,8 @@ public class MainActivity extends AppCompatActivity {
                 return fragments.size();
             }
         });
+        checkLoginRequest = new RequestUtil(this).get().url(URL.CHECK).setToken();
+        toast = new ImageTextToast(this);
     }
 
     private void initBottomNav() {

@@ -28,6 +28,7 @@ public class RecyclePopupWindow extends PopupWindow implements View.OnClickListe
     private boolean isRecycle = true;
     private View recycleSwitchBt;
     private View buySwitchBt;
+    private View numReduceBt;
     private TextView numView;
     private TextView switchDesc;
     private TextView confirmBtText;
@@ -106,6 +107,7 @@ public class RecyclePopupWindow extends PopupWindow implements View.OnClickListe
         buySwitchTextView = v.findViewById(R.id.buy_switch_text);
         recycleTipsView = v.findViewById(R.id.recycle_tips);
         expectPriceView = v.findViewById(R.id.expect_price);
+        numReduceBt = v.findViewById(R.id.num_reduce_bt);
 
         buySwitchBt.setOnClickListener(this);
         recycleSwitchBt.setOnClickListener(this);
@@ -184,6 +186,9 @@ public class RecyclePopupWindow extends PopupWindow implements View.OnClickListe
                 setSwitch();
             }
         } else if (vid == R.id.num_plus_bt) {
+            if (num == 1) {
+                numReduceBt.setBackground(mContext.getDrawable(R.drawable.blue_bt_background_2));
+            }
             numView.setText(String.valueOf(++num));
 
             if (transaction && isRecycle) {
@@ -192,8 +197,13 @@ public class RecyclePopupWindow extends PopupWindow implements View.OnClickListe
         } else if (vid == R.id.num_reduce_bt) {
             if (num == 1) {
                 new ImageTextToast(mContext).fail("不能更少了哦~");
+
             } else {
-                numView.setText(String.valueOf(--num));
+                num--;
+                if (num == 1) {
+                    numReduceBt.setBackground(mContext.getDrawable(R.drawable.blue_bt_background_3));
+                }
+                numView.setText(String.valueOf(num));
                 if (transaction && isRecycle) {
                     expectPriceView.setText(String.valueOf(num * (game.getPrice() - 15)));
                 }
