@@ -32,11 +32,13 @@
     <TextView
             android:id="@+id/game_name"
             android:text="游戏名"
+            android:textSize="17sp"
             android:textColor="#303133"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="@+id/cover_image"
-            app:layout_constraintStart_toEndOf="@+id/cover_image"
+            app:layout_constraintTop_toTopOf="@+id/platform"
+            app:layout_constraintBottom_toBottomOf="@id/platform"
+            app:layout_constraintStart_toEndOf="@+id/platform"
             android:layout_marginStart="10dp"
             tools:ignore="HardcodedText" />
 
@@ -44,10 +46,10 @@
             android:id="@+id/platform"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="@id/game_name"
-            app:layout_constraintBottom_toBottomOf="@id/game_name"
-            app:layout_constraintStart_toEndOf="@id/game_name"
+            app:layout_constraintTop_toTopOf="@id/cover_image"
+            app:layout_constraintStart_toEndOf="@id/cover_image"
             android:layout_marginStart="10dp"
+            android:layout_marginTop="7dp"
             android:background="@drawable/shape_corner12">
 
         <TextView
@@ -67,13 +69,14 @@
     <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintTop_toBottomOf="@+id/game_name"
-            app:layout_constraintStart_toStartOf="@+id/game_name"
-            android:layout_marginTop="15dp">
+            app:layout_constraintBottom_toBottomOf="@id/cover_image"
+            app:layout_constraintStart_toStartOf="@+id/platform"
+            android:layout_marginTop="7dp">
 
         <TextView
                 android:id="@+id/game_price"
                 android:text="￥320"
+                android:textSize="19sp"
                 android:textColor="#F16B40"
                 android:textStyle="bold"
                 android:layout_width="wrap_content"
@@ -122,12 +125,12 @@
                 app:layout_constraintTop_toTopOf="@id/num_plus_bt">
 
             <TextView
-                    android:id="@+id/num"
+                    android:id="@+id/game_num"
+                    android:text="@string/num_default_value"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:layout_marginEnd="10dp"
-                    android:text="@string/num_default_value"
                     android:textSize="16sp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"

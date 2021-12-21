@@ -21,10 +21,7 @@ import com.example.gameshop.toast.ImageTextToast;
 import com.example.gameshop.utils.RequestUtil;
 import com.example.gameshop.utils.ResponseUtil;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author sheng
@@ -34,7 +31,10 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
     private static final String TAG = "PackGameAdapter";
     private final List<RecyclePackGame> games;
     private final Context mContext;
+    private final String type;
     private OnGameClick onGameClick;
+    private final List<RecyclePackGame> selectedGames = new ArrayList<>();
+    private final List<Integer> selectedPosition = new ArrayList<>();
     private final ImageTextToast toast;
     // 选中游戏的请求
     private final RequestUtil selectedGameRequest;
@@ -44,6 +44,42 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
     private final RequestUtil numUpdateRequest;
     private static final String NUM_PLUS_SIGNAL = "numPlus";
     private static final String NUM_REDUCE_SIGNAL = "numReduce";
+    private static final String GAME_SELECTED_SIGNAL = "gameSelected";
+    private OnSelectedGamesChange onSelectedGamesChange;
+
+    //  删除数据
+    public void remove(int position) {
+        games.remove(position);
+        //删除动画
+        notifyItemRemoved(position);
+        notifyDataSetChanged();
+    }
+
+    public List<Integer> getSelectedPosition() {
+        return selectedPosition;
+    }
+
+    public List<RecyclePackGame> getSelectedGames() {
+        return selectedGames;
+    }
+
+    public void setOnSelectedGamesChange(OnSelectedGamesChange onSelectedGamesChange) {
+        this.onSelectedGamesChange = onSelectedGamesChange;
+    }
+
+    public interface OnSelectedGamesChange {
+        void onchange(List<RecyclePackGame> selected);
+    }
+
+    public void selectedAll(boolean selected) {
+        for (int i = 0; i < getItemCount(); i++) {
+            if (selected != games.get(i).isSelected()) {
+                notifyItemChanged(i, GAME_SELECTED_SIGNAL);
+            }
+        }
+        // 修改view的进程和这边不同步，为了方便就直接这样.. 反正效果一样嘛
+        onSelectedGamesChange.onchange(selected ? games : new ArrayList<>());
+    }
 
     public void setOnGameClick(OnGameClick onGameClick) {
         this.onGameClick = onGameClick;
@@ -53,27 +89,57 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
         this.games = games;
         this.mContext = mContext;
         this.toast = toast;
+        this.type = type;
 
-        selectedGameRequest = new RequestUtil(mContext)
-                .url(URL.RECYCLE_PACK_SELECTED_GAME).post().setToken().addFormParameter("type", type);
-        // TODO:完善选中游戏之后的操作
+        selectedGameRequest = new RequestUtil(mContext).url(URL.PACK_SELECTED).post().setToken();
         selectedGameResponse = new ResponseUtil()
-                .success((msg, dataJSON) -> {
-
-                })
                 .fail((msg, dataJSON) -> {
-
+                    ((Activity) mContext).runOnUiThread(() -> {
+                        toast.fail(msg);
+                    });
+                    Log.w(TAG, "PackGameAdapter: " + msg);
                 })
                 .error((msg, dataJSON) -> {
-
+                    ((Activity) mContext).runOnUiThread(() -> {
+                        toast.error(msg);
+                    });
+                    Log.e(TAG, "PackGameAdapter: " + msg);
                 });
 
-        numUpdateRequest = new RequestUtil(mContext)
-                .url(URL.RECYCLE_PACK_UPDATE_NUM).post().setToken().addFormParameter("type", type);
+        numUpdateRequest = new RequestUtil(mContext).url(URL.PACK_UPDATE_NUM).post().setToken();
     }
 
     public interface OnGameClick {
-        void onClick(long gameId);
+        void onClick(RecyclePackGame game);
+    }
+
+    void gameItemSelected(int position) {
+        changeItem(position, GAME_SELECTED_SIGNAL);
+        // 点击选中按钮
+        selectedGameRequest
+                .addFormParameter("type", type)
+                .addFormParameter("idList", Collections.singletonList(games.get(position).getId()))
+                .then((call, response) -> {
+                    selectedGameResponse
+                            .setResponse(response)
+                            .afterSuccess(() -> {
+                                // 选中状态有更改，执行回调
+                                if (onSelectedGamesChange != null) {
+                                    onSelectedGamesChange.onchange(selectedGames);
+                                }
+                            })
+                            .afterNotSuccess(() -> {
+                                changeItem(position, GAME_SELECTED_SIGNAL);
+                            })
+                            .handle();
+                })
+                .error((call, e) -> {
+                    changeItem(position, GAME_SELECTED_SIGNAL);
+                    e.printStackTrace();
+
+                    toast.fail("网络异常");
+                })
+                .request();
     }
 
     @Override
@@ -81,22 +147,11 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
         int vid = v.getId();
         int position = (int) v.getTag();
         if (vid == R.id.selected) {
-            // 点击选中按钮
-            selectedGameRequest
-                    .addFormParameter("idList", Collections.singletonList(games.get(position).getId()))
-                    .then((call, response) -> {
-                        selectedGameResponse.setResponse(response).handle();
-                    })
-                    .error((call, e) -> {
-                        e.printStackTrace();
-
-                        toast.fail("网络异常");
-                    })
-                    .request();
+            gameItemSelected(position);
 
         } else if (vid == R.id.num_plus_bt) {
             // 数量增加按钮
-            numUpdate(position, NUM_PLUS_SIGNAL, NUM_REDUCE_SIGNAL);
+            numUpdate(position, games.get(position).getNum() + 1, NUM_PLUS_SIGNAL, NUM_REDUCE_SIGNAL);
 
         } else if (vid == R.id.num_reduce_bt) {
             // 减少按钮
@@ -104,48 +159,56 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
                 new ImageTextToast(mContext).fail("不能更少了哦~");
 
             } else {
-                numUpdate(position, NUM_REDUCE_SIGNAL, NUM_PLUS_SIGNAL);
+                numUpdate(position, games.get(position).getNum() - 1, NUM_REDUCE_SIGNAL, NUM_PLUS_SIGNAL);
             }
 
         } else {
             // 点击整个按钮
             if (onGameClick != null) {
-                onGameClick.onClick(games.get(position).getId());
+                onGameClick.onClick(games.get(position));
             }
         }
     }
 
     // 修改游戏数量
-    private void numUpdate(int position, String signal, String failSignal) {
+    private void numUpdate(int position, int num, String signal, String failSignal) {
         // 修改数量的View
         notifyItemChanged(position, signal);
-        Map<String, Object> num = new HashMap<>();
-        num.put("id", games.get(position).getId());
-        num.put("num", games.get(position).getNum());
+        Map<String, Object> numObject = new HashMap<>();
+        numObject.put("id", games.get(position).getId());
+        numObject.put("num", num);
 
         numUpdateRequest
-                .addFormParameter("numList", num)
+                .addFormParameter("numList", Collections.singletonList(numObject))
+                .addFormParameter("type", type)
                 .then((call, response) -> {
                     new ResponseUtil()
                             .setResponse(response)
-                            .success((msg, dataJSON) -> {
-                                toast.success(msg);
+                            .afterSuccess(() -> {
+                                // 修改了选中的游戏的数量
+                                if (onSelectedGamesChange != null && games.get(position).isSelected()) {
+                                    onSelectedGamesChange.onchange(selectedGames);
+                                }
                             })
                             .fail((msg, dataJSON) -> {
                                 toast.fail(msg);
-                                Log.w(TAG, msg);
+                                ((Activity) mContext).runOnUiThread(() -> {
+                                    toast.fail(msg);
+                                });
                             })
                             .error((msg, dataJSON) -> {
                                 toast.error(msg);
-                                Log.e(TAG, msg);
+                                ((Activity) mContext).runOnUiThread(() -> {
+                                    toast.error(msg);
+                                });
                             })
                             .afterNotSuccess(() -> {
-                                changeNum(position, failSignal);
+                                changeItem(position, failSignal);
                             })
                             .handle();
                 })
                 .error((call, e) -> {
-                    changeNum(position, failSignal);
+                    changeItem(position, failSignal);
 
                     Looper.prepare();
                     new ImageTextToast(mContext).error("网络异常");
@@ -154,7 +217,7 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
                 .request();
     }
 
-    private void changeNum(int position, String signal) {
+    private void changeItem(int position, String signal) {
         ((Activity) mContext).runOnUiThread(() -> {
             notifyItemChanged(position, signal);
         });
@@ -174,10 +237,16 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
         Glide.with(mContext).load(URL.IMAGE + (game.getCover_image() == null ? "notfound.jpg" : game.getCover_image())).into(holder.coverImage);
         // 设置选中状态
         holder.selectedBt.setImageResource(game.isSelected() ? R.mipmap.selected : R.mipmap.unselected);
+        if (game.isSelected()) {
+            selectedGames.add(game);
+            selectedPosition.add(position);
+        }
         // 设置游戏名
         holder.gameNameView.setText(game.getName());
         // 显示游戏平台
         holder.platformNameView.setText(game.getPlatform());
+        // 设置减少按钮的图标
+        holder.numReduceBt.setBackground(mContext.getDrawable(game.getNum() == 1 ? R.drawable.blue_bt_background_3 : R.drawable.blue_bt_background_2));
         // 设置图标样式
         if ("NS".equals(game.getPlatform())) {
             holder.platformNameView.setTextColor(Color.parseColor("#EF2020"));
@@ -190,11 +259,16 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
         // 设置价格
         holder.gamePriceView.setText("￥" + game.getNow_price());
         // 设置回收袋中的游戏数量
-        holder.numTextView.setText(game.getNum());
+        holder.numTextView.setText("" + game.getNum());
+
+        holder.selectedBt.setTag(position);
+        holder.numReduceBt.setTag(position);
+        holder.NumPlusBt.setTag(position);
         holder.setItemTag(position);
     }
 
     @Override
+    @SuppressLint("SetTextI18n")
     public void onBindViewHolder(@NonNull ViewHolder holder, int position, @NonNull List<Object> payloads) {
         if (getItemViewType(position) == 0) {
             if (payloads.isEmpty()) {
@@ -209,20 +283,32 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
                         holder.numReduceBt.setBackground(mContext.getDrawable(R.drawable.blue_bt_background_2));
                     }
                     game.setNum(game.getNum() + 1);
-                    holder.numTextView.setText(game.getNum());
+                    holder.numTextView.setText("" + game.getNum());
 
                 } else if (NUM_REDUCE_SIGNAL.equals(payloads.get(0))) {
                     // 点击减少按钮
                     game.setNum(game.getNum() - 1);
-                    holder.numTextView.setText(game.getNum());
+                    holder.numTextView.setText("" + game.getNum());
 
                     if (game.getNum() == 1) {
                         holder.numReduceBt.setBackground(mContext.getDrawable(R.drawable.blue_bt_background_3));
+                    }
+
+                } else if (GAME_SELECTED_SIGNAL.equals(payloads.get(0))) {
+                    game.setSelected(!game.isSelected());
+                    // 修改图标
+                    holder.selectedBt.setImageResource(game.isSelected() ? R.mipmap.selected : R.mipmap.unselected);
+                    // 修改已选中的id列表
+                    if (game.isSelected()) {
+                        selectedGames.add(game);
+                    } else {
+                        selectedGames.remove(game);
                     }
                 }
             }
         }
     }
+
 
     @Override
     public int getItemCount() {
@@ -250,7 +336,7 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
             gamePriceView = itemView.findViewById(R.id.game_price);
             numReduceBt = itemView.findViewById(R.id.num_reduce_bt);
             NumPlusBt = itemView.findViewById(R.id.num_plus_bt);
-            numTextView = itemView.findViewById(R.id.num);
+            numTextView = itemView.findViewById(R.id.game_num);
             // 设置监听
             selectedBt.setOnClickListener(PackGameAdapter.this);
             numReduceBt.setOnClickListener(PackGameAdapter.this);

@@ -96,6 +96,16 @@ public class ResponseUtil {
         assert body != null;
         // 因为后端用了个工具类，不这样弄就很麻烦
         JSONObject data = JSON.parseObject(body.string());
+        if (data.getString("error") != null) {
+            if (error != null) {
+                error.onError("请求失败", null);
+            }
+
+            if (afterNotSuccess != null) {
+                afterNotSuccess.after();
+            }
+            return;
+        }
         switch (data.getString("code")) {
             case "200":
                 // 请求成功

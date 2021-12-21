@@ -127,9 +127,7 @@ public class GameListFragment extends Fragment implements View.OnClickListener {
         GameListAdapter adapter = new GameListAdapter(getActivity(), gameList);
         adapter.setOnGameClick(game -> {
             // 当item被点击，跳转到游戏详细信息界面
-            Intent intent = new Intent(getActivity(), GameActivity.class);
-            // 传被点击的id
-            intent.putExtra("id", game.getId());
+            Intent intent = new Intent(getActivity(), GameActivity.class).putExtra("id", game.getId());
             Objects.requireNonNull(getActivity()).startActivity(intent);
         });
         Objects.requireNonNull(getActivity()).runOnUiThread(() -> lvGameList.setAdapter(adapter));

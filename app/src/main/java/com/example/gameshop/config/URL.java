@@ -20,17 +20,21 @@ public class URL {
     // 注册URL
     public static final String REGISTER = "/user/register";
     // 添加到回收袋
-    public static final String ADD_PACK = "/recycle_pack/add";
+    public static final String ADD_PACK = "/pack/add";
     // 订单添加的URL
     public static final String ORDER_ADD = "/user/order/add";
     // 获取用户信息
     public static final String USER_INFO = "/user/info";
     // 获取回收袋的游戏
-    public static final String RECYCLE_PACK_GAMES_LIST = "/recycle_pack/list";
+    public static final String PACK_GAMES_LIST = "/pack/list";
     // 选中游戏
-    public static final String RECYCLE_PACK_SELECTED_GAME = "/recycle_pack/change";
+    public static final String PACK_SELECTED = "/pack/selected";
+    // 购物车全选
+    public static final String PACK_ALL_SELECTED = "/pack/selected/all";
     // 修改数量
-    public static final String RECYCLE_PACK_UPDATE_NUM = "/recycle_pack/update";
+    public static final String PACK_UPDATE_NUM = "/pack/update";
+    // 修改数量
+    public static final String PACK_DELETE = "/pack/delete";
     // 修改用户信息
     public static final String USER_INFO_CHANGE = "/user/info/update";
 }
