@@ -54,9 +54,10 @@
     <string name="recycle_pack_title">回收袋</string>
     <string name="recycle_manage_bt_text">管理</string>
     <string name="all_selected_text">全选</string>
-    <string name="settlement_bt_text">结算</string>
+    <string name="settlement_bt_text">下单购买</string>
     <string name="count_text">合计:</string>
     <string name="price_icon">￥</string>
     <string name="pack_delete_bt_text">删 除</string>
     <string name="pack_add_favorite_bt_text">添加到收藏</string>
+    <string name="order_submit_settlement_bt_text">确认购买</string>
 </resources>

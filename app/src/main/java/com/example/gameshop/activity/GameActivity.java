@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import androidx.core.widget.NestedScrollView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import com.alibaba.fastjson.JSONObject;
 import com.bumptech.glide.Glide;
 import com.example.gameshop.config.URL;
 import com.example.gameshop.R;
@@ -21,15 +22,17 @@ import com.example.gameshop.pojo.Game;
 import com.example.gameshop.popupWindow.RecyclePopupWindow;
 import com.example.gameshop.toast.ImageTextToast;
 import com.example.gameshop.utils.RequestUtil;
-import com.example.gameshop.utils.ResponseUtil;
+import com.example.gameshop.utils.CallBackUtil;
 import com.example.gameshop.utils.SharedDataUtil;
-import com.google.gson.Gson;
 import com.youth.banner.Banner;
 import com.youth.banner.BannerConfig;
 import com.youth.banner.loader.ImageLoader;
 import lecho.lib.hellocharts.view.LineChartView;
+import okhttp3.MultipartBody;
+import okhttp3.Request;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class GameActivity extends AppCompatActivity implements View.OnClickListener {
@@ -42,10 +45,13 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
     private TextView nameView;
     private TextView priceView;
     private LineChartView chart;
-    private RequestUtil getGameRequest;
-    private RequestUtil addRecyclePackRequest;
-    private ResponseUtil getGameResponse;
-    private ResponseUtil addRecyclePackResponse;
+    private SharedDataUtil util;
+    private long id;
+
+
+    private interface AfterGetDataSuccess {
+        void after();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -106,8 +112,9 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
     // 初始化参数
     private void initParams() {
         // 获取之前的界面传递过来的id
-        long id = getIntent().getLongExtra("id", -1);
+        id = getIntent().getLongExtra("id", -1);
         toast = new ImageTextToast(this);
+        util = new SharedDataUtil(this);
 
         picturesBanner = findViewById(R.id.pictures_banner);
         picturesBanner
@@ -124,57 +131,48 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
         priceView = findViewById(R.id.game_price);
         chart = findViewById(R.id.history_price);
 
-        // 获取游戏信息的请求
-        getGameRequest = new RequestUtil(this).get().url(URL.GAME_INFO + id);
-        // 获取信息请求的回复
-        getGameResponse = new ResponseUtil()
-                .success((msg, dataJSON) -> {
-                    // 设置游戏信息
-                    game = new Gson().fromJson(dataJSON, Game.class);
-                    // 设置需要游戏信息的ui
-                    initView();
-                })
-                .fail((msg, dataJSON) -> {
-                    Log.w(TAG, dataJSON);
-                    toast.fail(msg);
-                })
-                .error((msg, dataJSON) -> {
-                    Log.e(TAG, dataJSON);
-                    toast.error(msg);
-                });
-        // 添加购物车的请求
-        addRecyclePackRequest = new RequestUtil(this)
-                .url(URL.ADD_PACK).post().setToken().addFormParameter("id", id);
-        // 添加到购物车之后的操作
-        addRecyclePackResponse = new ResponseUtil()
-                .success((msg, dataJSON) -> {
-                    toast.success(msg);
-                })
-                .fail((msg, dataJSON) -> {
-                    toast.fail(msg);
-                    Log.w(TAG, dataJSON);
-                })
-                .error((msg, dataJSON) -> {
-                    toast.error(msg);
-                    Log.e(TAG, dataJSON);
-                });
         // 设置回收流程的图片
         Glide.with(this).load(URL.IMAGE + "process.png").into((ImageView) findViewById(R.id.process));
     }
 
     // 获取数据
-    private void setGameInfo(ResponseUtil.AfterSuccess after) {
-        getGameRequest
-                .then((call, response) -> {
-                    getGameResponse.setResponse(response)
-                            .afterSuccess(after)
-                            .handle();
+    private void setGameInfo(AfterGetDataSuccess after) {
+        CallBackUtil getGameCallback = new CallBackUtil()
+                .success((msg, data) -> {
+                    // 设置游戏信息
+                    game = JSONObject.parseObject(data, Game.class);
+                    // 设置需要游戏信息的ui
+                    initView();
+                    // 执行额外操作
+                    if (after != null) {
+                        after.after();
+                    }
                 })
-                .error((call, e) -> {
+                .fail((msg, data) -> {
+                    Log.w(TAG, msg + ": " + data);
+                    runOnUiThread(() -> {
+                        toast.fail(msg);
+                    });
+                })
+                .error((msg, data) -> {
+                    Log.e(TAG, msg + ": " + data);
+                    runOnUiThread(() -> {
+                        toast.error(msg);
+                    });
+                });
+
+        Request request = new Request.Builder().url(URL.GAME_INFO + id).build();
+        new RequestUtil()
+                .setRequest(request)
+                .setContext(this)
+                .setCallback(getGameCallback)
+                .error((error, e) -> {
                     e.printStackTrace();
-                    toast.error("获取数据失败");
+                    GameActivity.this.runOnUiThread(() -> {
+                        toast.error("获取数据失败");
+                    });
                 })
-                .request();
+                .async();
     }
 
     // 获取数据之后，将数据显示到界面中
@@ -210,6 +208,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
         swipe.setOnRefreshListener(() -> {
             setGameInfo(() -> {
                 swipe.setRefreshing(false);
+                toast.success("刷新成功");
             });
         });
     }
@@ -229,24 +228,9 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
                     .setSwitchDescText("添加类型：")
                     .confirmBtText("添加到回收袋");
             // 点击确认按钮之后提交添加请求
-            window.setOnSubmit((type, num) -> {
-                addRecyclePackRequest
-                        .addFormParameter("num", num)
-                        .addFormParameter("type", type)
-                        .then((call, response) -> {
-                            addRecyclePackResponse
-                                    .setResponse(response)
-                                    .afterSuccess(() -> {
-                                        runOnUiThread(window::dismiss);
-                                    })
-                                    .handle();
-                        })
-                        .error((call, e) -> {
-                            e.printStackTrace();
-                            toast.error("网络异常");
-                        })
-                        .request();
-            });
+            window.setOnSubmit(((type, num) -> {
+                addPack(type, num, window);
+            }));
             // 设置出现位置
             window.showAtLocation(
                     getWindow().getDecorView(),
@@ -256,6 +240,55 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
             // 设置背景
             window.setBackground();
         }
+    }
+
+    private void addPack(String type, int num, RecyclePopupWindow window) {
+        MultipartBody.Builder formBuilder = new MultipartBody.Builder().setType(MultipartBody.FORM);
+
+        formBuilder
+                .addFormDataPart("num", JSONObject.toJSONString(num))
+                .addFormDataPart("type", type)
+                .addFormDataPart("id", JSONObject.toJSONString(game.getId()))
+                .addFormDataPart("account", util.getAccount());
+
+        Request request = new Request
+                .Builder()
+                .url(URL.ADD_PACK)
+                .post(formBuilder.build())
+                .addHeader("token", util.getToken())
+                .build();
+
+        CallBackUtil addPackCalledBack = new CallBackUtil()
+                .success((msg, data) -> {
+                    runOnUiThread(() -> {
+                        toast.success(msg);
+                        runOnUiThread(window::dismiss);
+                    });
+                })
+                .fail((msg, data) -> {
+                    runOnUiThread(() -> {
+                        toast.fail(msg);
+                    });
+                    Log.w(TAG, msg + ": " + data);
+                })
+                .error((msg, data) -> {
+                    runOnUiThread(() -> {
+                        toast.error(msg);
+                    });
+                    Log.e(TAG, msg + ": " + data);
+                });
+
+        new RequestUtil()
+                .setContext(this)
+                .setRequest(request)
+                .setCallback(addPackCalledBack)
+                .error((error, e) -> {
+                    e.printStackTrace();
+                    runOnUiThread(() -> {
+                        toast.error("获取数据失败");
+                    });
+                })
+                .async();
     }
 
     // 点击交易按钮
@@ -276,7 +309,8 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
             window.setOnSubmit((type, num) -> {
                 Intent intent = new Intent(this, OrderSubmitActivity.class)
                         .putExtra("type", type)
-                        .putExtra("num", num);
+                        .putExtra("id", JSONObject.toJSONString(Collections.singleton(game.getId())))
+                        .putExtra("num", JSONObject.toJSONString(Collections.singleton(num)));
                 startActivityForResult(intent, OrderSubmitActivity.CODE);
             });
             // 设置出现位置

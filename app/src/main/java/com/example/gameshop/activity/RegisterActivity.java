@@ -14,11 +14,13 @@ import com.example.gameshop.R;
 import com.example.gameshop.config.URL;
 import com.example.gameshop.toast.ImageTextToast;
 import com.example.gameshop.utils.RequestUtil;
-import com.example.gameshop.utils.ResponseUtil;
+import com.example.gameshop.utils.CallBackUtil;
 import com.example.gameshop.utils.SharedDataUtil;
-import okhttp3.Response;
+import okhttp3.FormBody;
+import okhttp3.HttpUrl;
+import okhttp3.Request;
 
-import java.io.IOException;
+import java.util.Objects;
 
 import static com.example.gameshop.config.ConstParam.*;
 
@@ -29,6 +31,28 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
     private View registerBT;
     private boolean passwordVisible = false;
     private ImageView iSwitch;
+
+    private final CallBackUtil registeredCallback = new CallBackUtil()
+            .success((msg, dataJSON) -> {
+                new SharedDataUtil(this).setAccount(accountET.getText().toString());
+                // 给登录界面返回注册成功
+                Intent intent = new Intent()
+                        .putExtra("msg", msg)
+                        .putExtra("account", accountET.getText().toString());
+                setResult(RESULT_OK, intent);
+                // 回到上一页，直接关掉就行了
+                finish();
+            })
+            .fail((msg, dataJSON) -> {
+                Looper.prepare();
+                new ImageTextToast(this).fail(msg);
+                Looper.loop();
+            })
+            .error((msg, dataJSON) -> {
+                Looper.prepare();
+                new ImageTextToast(this).error(msg);
+                Looper.loop();
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,43 +117,18 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
     }
 
     private void submit() {
-        new RequestUtil(this)
-                .post()
-                .url(URL.REGISTER)
-                .addFormParameter("account", accountET.getText().toString())
-                .addFormParameter("password", passwordET.getText().toString())
-                .then((call, response) -> {
-                    onResponseSuccess(response);
-                })
-                .error((call, e) -> {
-                    e.printStackTrace();
-                    new ImageTextToast(this).error("请求失败");
-                })
-                .request();
+        FormBody form = new FormBody
+                .Builder()
+                .add("account", accountET.getText().toString())
+                .add("password", passwordET.getText().toString())
+                .build();
+
+        Request request = new Request.Builder()
+                .url(Objects.requireNonNull(HttpUrl.parse(URL.PACK_GAMES_LIST)))
+                .post(form)
+                .build();
+
+        new RequestUtil().setContext(this).setRequest(request).setCallback(registeredCallback).async();
     }
 
-    private void onResponseSuccess(Response response) throws IOException {
-        new ResponseUtil(response)
-                .success((msg, dataJSON) -> {
-                    new SharedDataUtil(this).setAccount(accountET.getText().toString());
-                    // 给登录界面返回注册成功
-                    Intent intent = new Intent()
-                            .putExtra("msg", msg)
-                            .putExtra("account", accountET.getText().toString());
-                    setResult(RESULT_OK, intent);
-                    // 回到上一页，直接关掉就行了
-                    finish();
-                })
-                .fail((msg, dataJSON) -> {
-                    Looper.prepare();
-                    new ImageTextToast(this).fail(msg);
-                    Looper.loop();
-                })
-                .error((msg, dataJSON) -> {
-                    Looper.prepare();
-                    new ImageTextToast(this).error(msg);
-                    Looper.loop();
-                })
-                .handle();
-    }
 }

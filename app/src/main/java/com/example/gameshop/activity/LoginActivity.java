@@ -15,11 +15,13 @@ import com.example.gameshop.config.URL;
 import com.example.gameshop.R;
 import com.example.gameshop.toast.ImageTextToast;
 import com.example.gameshop.utils.RequestUtil;
-import com.example.gameshop.utils.ResponseUtil;
+import com.example.gameshop.utils.CallBackUtil;
 import com.example.gameshop.utils.SharedDataUtil;
-import okhttp3.Response;
+import okhttp3.FormBody;
+import okhttp3.HttpUrl;
+import okhttp3.Request;
 
-import java.io.IOException;
+import java.util.Objects;
 
 import static com.example.gameshop.config.ConstParam.*;
 
@@ -31,6 +33,24 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
     private boolean passwordVisible = false;
     private ImageView iSwitch;
 
+    private final CallBackUtil loginCallback = new CallBackUtil()
+            .success((msg, dataJSON) -> {
+                new SharedDataUtil(this).setAccount(accountET.getText().toString());
+                // 给上一级页面返回登录成功
+                setResult(RESULT_OK, new Intent().putExtra("msg", msg).putExtra("route", getIntent().getIntExtra("route", 0)));
+                // 回到上一页，直接关掉就行了
+                finish();
+            })
+            .fail((msg, dataJSON) -> {
+                Looper.prepare();
+                new ImageTextToast(this).fail(msg);
+                Looper.loop();
+            })
+            .error((msg, dataJSON) -> {
+                Looper.prepare();
+                new ImageTextToast(this).error(msg);
+                Looper.loop();
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,42 +128,25 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
 
     // 提交注册表
     private void submit() {
-        new RequestUtil(this)
-                .post()
-                .url(URL.LOGIN)
-                .addFormParameter("account", accountET.getText().toString())
-                .addFormParameter("password", passwordET.getText().toString())
-                .then((call, response) -> {
-                    onResponseSuccess(response);
-                })
+        FormBody form = new FormBody
+                .Builder()
+                .add("account", accountET.getText().toString())
+                .add("password", passwordET.getText().toString())
+                .build();
+
+        Request request = new Request.Builder()
+                .url(Objects.requireNonNull(HttpUrl.parse(URL.LOGIN)))
+                .post(form)
+                .build();
+
+        new RequestUtil()
+                .setContext(this)
+                .setRequest(request)
+                .setCallback(loginCallback)
                 .error((call, e) -> {
                     e.printStackTrace();
                     new ImageTextToast(this).error("请求失败");
-                })
-                .request();
-    }
-
-    // 后台有应答时的操作
-    private void onResponseSuccess(Response response) throws IOException {
-        new ResponseUtil(response)
-                .success((msg, dataJSON) -> {
-                    new SharedDataUtil(this).setAccount(accountET.getText().toString());
-                    // 给上一级页面返回登录成功
-                    setResult(RESULT_OK, new Intent().putExtra("msg", msg).putExtra("route", getIntent().getIntExtra("route", 0)));
-                    // 回到上一页，直接关掉就行了
-                    finish();
-                })
-                .fail((msg, dataJSON) -> {
-                    Looper.prepare();
-                    new ImageTextToast(this).fail(msg);
-                    Looper.loop();
-                })
-                .error((msg, dataJSON) -> {
-                    Looper.prepare();
-                    new ImageTextToast(this).error(msg);
-                    Looper.loop();
-                })
-                .handle();
+                }).async();
     }
 
     @Override

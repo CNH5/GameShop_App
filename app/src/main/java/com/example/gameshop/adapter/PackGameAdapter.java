@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
-import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,15 +12,21 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import com.alibaba.fastjson.JSONObject;
 import com.bumptech.glide.Glide;
 import com.example.gameshop.R;
 import com.example.gameshop.config.URL;
 import com.example.gameshop.pojo.RecyclePackGame;
 import com.example.gameshop.toast.ImageTextToast;
 import com.example.gameshop.utils.RequestUtil;
-import com.example.gameshop.utils.ResponseUtil;
+import com.example.gameshop.utils.CallBackUtil;
+import com.example.gameshop.utils.SharedDataUtil;
+import okhttp3.FormBody;
+import okhttp3.HttpUrl;
+import okhttp3.Request;
 
 import java.util.*;
+
 
 /**
  * @author sheng
@@ -33,30 +38,26 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
     private final Context mContext;
     private final String type;
     private OnGameClick onGameClick;
-    private final List<RecyclePackGame> selectedGames = new ArrayList<>();
+    private List<RecyclePackGame> selectedGames = new ArrayList<>();
     private final List<Integer> selectedPosition = new ArrayList<>();
     private final ImageTextToast toast;
-    // 选中游戏的请求
-    private final RequestUtil selectedGameRequest;
-    // 处理选中游戏的响应头
-    private final ResponseUtil selectedGameResponse;
-    // 数量修改的请求
-    private final RequestUtil numUpdateRequest;
     private static final String NUM_PLUS_SIGNAL = "numPlus";
     private static final String NUM_REDUCE_SIGNAL = "numReduce";
     private static final String GAME_SELECTED_SIGNAL = "gameSelected";
     private OnSelectedGamesChange onSelectedGamesChange;
+    private final SharedDataUtil util;
 
     //  删除数据
-    public void remove(int position) {
-        games.remove(position);
+    public void removeSelected() {
         //删除动画
-        notifyItemRemoved(position);
-        notifyDataSetChanged();
-    }
-
-    public List<Integer> getSelectedPosition() {
-        return selectedPosition;
+        for (int position : selectedPosition) {
+            games.remove(position);
+            ((Activity) mContext).runOnUiThread(() -> {
+                notifyItemRemoved(position);
+            });
+        }
+        selectedGames = new ArrayList<>();
+        ((Activity) mContext).runOnUiThread(this::notifyDataSetChanged);
     }
 
     public List<RecyclePackGame> getSelectedGames() {
@@ -90,9 +91,17 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
         this.mContext = mContext;
         this.toast = toast;
         this.type = type;
+        this.util = new SharedDataUtil(mContext);
+    }
 
-        selectedGameRequest = new RequestUtil(mContext).url(URL.PACK_SELECTED).post().setToken();
-        selectedGameResponse = new ResponseUtil()
+    public interface OnGameClick {
+        void onClick(RecyclePackGame game);
+    }
+
+    void gameItemSelected(int position) {
+        changeItem(position, GAME_SELECTED_SIGNAL);
+        // 点击选中按钮
+        CallBackUtil selectedGameCallback = new CallBackUtil()
                 .fail((msg, dataJSON) -> {
                     ((Activity) mContext).runOnUiThread(() -> {
                         toast.fail(msg);
@@ -106,40 +115,29 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
                     Log.e(TAG, "PackGameAdapter: " + msg);
                 });
 
-        numUpdateRequest = new RequestUtil(mContext).url(URL.PACK_UPDATE_NUM).post().setToken();
-    }
+        FormBody form = new FormBody
+                .Builder()
+                .add("account", util.getAccount())
+                .add("type", type)
+                .add("idList", JSONObject.toJSONString(Collections.singletonList(games.get(position).getId())))
+                .build();
 
-    public interface OnGameClick {
-        void onClick(RecyclePackGame game);
-    }
+        Request request = new Request.Builder()
+                .url(Objects.requireNonNull(HttpUrl.parse(URL.PACK_SELECTED)))
+                .addHeader("token", util.getToken())
+                .post(form)
+                .build();
 
-    void gameItemSelected(int position) {
-        changeItem(position, GAME_SELECTED_SIGNAL);
-        // 点击选中按钮
-        selectedGameRequest
-                .addFormParameter("type", type)
-                .addFormParameter("idList", Collections.singletonList(games.get(position).getId()))
-                .then((call, response) -> {
-                    selectedGameResponse
-                            .setResponse(response)
-                            .afterSuccess(() -> {
-                                // 选中状态有更改，执行回调
-                                if (onSelectedGamesChange != null) {
-                                    onSelectedGamesChange.onchange(selectedGames);
-                                }
-                            })
-                            .afterNotSuccess(() -> {
-                                changeItem(position, GAME_SELECTED_SIGNAL);
-                            })
-                            .handle();
-                })
+        new RequestUtil()
+                .setContext(mContext)
+                .setRequest(request)
+                .setCallback(selectedGameCallback)
                 .error((call, e) -> {
-                    changeItem(position, GAME_SELECTED_SIGNAL);
                     e.printStackTrace();
-
-                    toast.fail("网络异常");
-                })
-                .request();
+                    ((Activity) mContext).runOnUiThread(() -> {
+                        toast.error("请求出错");
+                    });
+                }).async();
     }
 
     @Override
@@ -178,43 +176,51 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
         numObject.put("id", games.get(position).getId());
         numObject.put("num", num);
 
-        numUpdateRequest
-                .addFormParameter("numList", Collections.singletonList(numObject))
-                .addFormParameter("type", type)
-                .then((call, response) -> {
-                    new ResponseUtil()
-                            .setResponse(response)
-                            .afterSuccess(() -> {
-                                // 修改了选中的游戏的数量
-                                if (onSelectedGamesChange != null && games.get(position).isSelected()) {
-                                    onSelectedGamesChange.onchange(selectedGames);
-                                }
-                            })
-                            .fail((msg, dataJSON) -> {
-                                toast.fail(msg);
-                                ((Activity) mContext).runOnUiThread(() -> {
-                                    toast.fail(msg);
-                                });
-                            })
-                            .error((msg, dataJSON) -> {
-                                toast.error(msg);
-                                ((Activity) mContext).runOnUiThread(() -> {
-                                    toast.error(msg);
-                                });
-                            })
-                            .afterNotSuccess(() -> {
-                                changeItem(position, failSignal);
-                            })
-                            .handle();
+        CallBackUtil numUpdateCallback = new CallBackUtil()
+                .success((msg, data) -> {
+                    // 修改了选中的游戏的数量
+                    if (onSelectedGamesChange != null && games.get(position).isSelected()) {
+                        onSelectedGamesChange.onchange(selectedGames);
+                    }
                 })
-                .error((call, e) -> {
+                .fail((msg, data) -> {
+                    toast.fail(msg);
+                    ((Activity) mContext).runOnUiThread(() -> {
+                        toast.fail(msg);
+                    });
                     changeItem(position, failSignal);
-
-                    Looper.prepare();
-                    new ImageTextToast(mContext).error("网络异常");
-                    Looper.loop();
                 })
-                .request();
+                .error((msg, data) -> {
+                    toast.error(msg);
+                    ((Activity) mContext).runOnUiThread(() -> {
+                        toast.error(msg);
+                    });
+                    changeItem(position, failSignal);
+                });
+
+        FormBody form = new FormBody
+                .Builder()
+                .add("account", util.getAccount())
+                .add("type", type)
+                .add("numList", JSONObject.toJSONString(Collections.singletonList(numObject)))
+                .build();
+
+        Request request = new Request.Builder()
+                .url(Objects.requireNonNull(HttpUrl.parse(URL.PACK_UPDATE_NUM)))
+                .addHeader("token", util.getToken())
+                .post(form)
+                .build();
+
+        new RequestUtil()
+                .setContext(mContext)
+                .setRequest(request)
+                .setCallback(numUpdateCallback)
+                .error((call, e) -> {
+                    e.printStackTrace();
+                    ((Activity) mContext).runOnUiThread(() -> {
+                        toast.error("请求出错");
+                    });
+                }).async();
     }
 
     private void changeItem(int position, String signal) {
@@ -226,7 +232,7 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return new ViewHolder(LayoutInflater.from(mContext).inflate(R.layout.item_recycle_pack_game, parent, false));
+        return new ViewHolder(LayoutInflater.from(mContext).inflate(R.layout.item_pack_game, parent, false));
     }
 
     @Override
@@ -301,8 +307,10 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
                     // 修改已选中的id列表
                     if (game.isSelected()) {
                         selectedGames.add(game);
+                        selectedPosition.add(position);
                     } else {
                         selectedGames.remove(game);
+                        selectedPosition.remove(Integer.valueOf(position));
                     }
                 }
             }

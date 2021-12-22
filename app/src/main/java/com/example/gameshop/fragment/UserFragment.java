@@ -15,7 +15,7 @@ import com.example.gameshop.activity.LoginActivity;
 import com.example.gameshop.config.URL;
 import com.example.gameshop.toast.ImageTextToast;
 import com.example.gameshop.utils.RequestUtil;
-import com.example.gameshop.utils.ResponseUtil;
+import com.example.gameshop.utils.CallBackUtil;
 import com.example.gameshop.utils.SharedDataUtil;
 
 import java.util.Objects;
@@ -47,29 +47,6 @@ public class UserFragment extends Fragment implements View.OnClickListener {
         if (new SharedDataUtil(Objects.requireNonNull(getActivity())).notLogin()) {
             // 没登陆，设置成对应的样子
         } else {
-            new RequestUtil(getActivity())
-                    .get()
-                    .url(URL.USER_INFO)
-                    .setToken()
-                    .then((call, response) -> {
-                        new ResponseUtil(response)
-                                .success((msg, dataJSON) -> {
-
-                                })
-                                .fail((msg, dataJSON) -> {
-
-                                })
-                                .error((msg, dataJSON) -> {
-
-                                })
-                                .handle();
-                    })
-                    .error((call, e) -> {
-                        e.printStackTrace();
-                        Looper.prepare();
-                        new ImageTextToast(getActivity()).error("网络异常");
-                        Looper.loop();
-                    });
         }
     }
 

@@ -28,13 +28,13 @@ public class RecyclePopupWindow extends PopupWindow implements View.OnClickListe
     private boolean isRecycle = true;
     private View recycleSwitchBt;
     private View buySwitchBt;
+    private TextView recycleSwitchTextView;
+    private TextView buySwitchTextView;
     private View numReduceBt;
     private TextView numView;
     private TextView switchDesc;
     private TextView confirmBtText;
     private TextView tipsTextView;
-    private TextView recycleSwitchTextView;
-    private TextView buySwitchTextView;
     private TextView expectPriceView;
     private View recycleTipsView;
     private OnSubmit onSubmit;

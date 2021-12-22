@@ -9,22 +9,18 @@ import android.view.View;
 import android.view.ViewGroup;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.alibaba.fastjson.JSONObject;
 import com.example.gameshop.config.URL;
 import com.example.gameshop.R;
 import com.example.gameshop.activity.GameActivity;
 import com.example.gameshop.adapter.GameListAdapter;
 import com.example.gameshop.pojo.Game;
 import com.example.gameshop.toast.ImageTextToast;
+import com.example.gameshop.utils.CallBackUtil;
 import com.example.gameshop.utils.RequestUtil;
-import com.example.gameshop.utils.ResponseUtil;
 import com.google.android.material.tabs.TabLayout;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import okhttp3.Call;
-import okhttp3.Response;
+import okhttp3.*;
 
-import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -42,6 +38,22 @@ public class GameListFragment extends Fragment implements View.OnClickListener {
     private final String[] platforms = new String[]{"NS", "PS"};
     private ImageTextToast toast;
     private int page = 1;
+
+    private final CallBackUtil getListCallBack = new CallBackUtil()
+            .success((msg, data) -> {
+
+                this.gameList = JSONObject.parseArray(data, Game.class);
+                // 设置适配器
+                setAdapter();
+            })
+            .fail((msg, dataJSON) -> {
+                Log.w(TAG, msg);
+                toast.success(msg);
+            })
+            .error((msg, dataJSON) -> {
+                Log.e(TAG, msg);
+                toast.error(msg);
+            });
 
 
     public GameListFragment() {
@@ -92,35 +104,23 @@ public class GameListFragment extends Fragment implements View.OnClickListener {
     }
 
     private void initList(int id) {
-        new RequestUtil(getActivity())
-                .get()
-                .url(URL.GAME_LIST)
-                .addQueryParameter("page", page)
+        HttpUrl url = Objects.requireNonNull(HttpUrl.parse(URL.GAME_LIST))
+                .newBuilder()
+                .addQueryParameter("page", String.valueOf(page))
                 .addQueryParameter("platform", platforms[id])
-                .then(this::getListSuccess)
-                .error(this::getListError)
-                .request();
-    }
+                .build();
 
-    private void getListSuccess(Call call, Response response) throws IOException {
-        new ResponseUtil(response)
-                .success((msg, dataJSON) -> {
-                    Type type = new TypeToken<List<Game>>() {
-                    }.getType();
-                    // 设置list
-                    gameList = new Gson().fromJson(dataJSON, type);
-                    // 设置适配器
-                    setAdapter();
+        new RequestUtil()
+                .setContext(getActivity())
+                .setRequest(new Request.Builder().url(url).build())
+                .setCallback(getListCallBack)
+                .error((error, e) -> {
+                    e.printStackTrace();
+                    Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
+                        toast.error("获取数据失败");
+                    });
                 })
-                .fail((msg, dataJSON) -> {
-                    Log.w(TAG, msg);
-                    toast.success(msg);
-                })
-                .error((msg, dataJSON) -> {
-                    Log.e(TAG, msg);
-                    toast.error(msg);
-                })
-                .handle();
+                .async();
     }
 
     private void setAdapter() {
@@ -133,10 +133,6 @@ public class GameListFragment extends Fragment implements View.OnClickListener {
         Objects.requireNonNull(getActivity()).runOnUiThread(() -> lvGameList.setAdapter(adapter));
     }
 
-    private void getListError(Call call, IOException e) {
-        e.printStackTrace();
-        new ImageTextToast(getActivity()).error("获取数据失败");
-    }
 
     private void initTab() {
         for (String platform : platforms) {

@@ -17,12 +17,15 @@ import com.example.gameshop.fragment.ServiceFragment;
 import com.example.gameshop.fragment.UserFragment;
 import com.example.gameshop.toast.ImageTextToast;
 import com.example.gameshop.utils.RequestUtil;
-import com.example.gameshop.utils.ResponseUtil;
+import com.example.gameshop.utils.CallBackUtil;
 import com.example.gameshop.utils.SharedDataUtil;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import okhttp3.HttpUrl;
+import okhttp3.Request;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -33,8 +36,15 @@ public class MainActivity extends AppCompatActivity {
             UserFragment.newInstance()
     );
     private ViewPager2 mainView;
-    private RequestUtil checkLoginRequest;
     private ImageTextToast toast;
+    private SharedDataUtil util;
+
+    private final CallBackUtil checkLoginCallback = new CallBackUtil()
+            .fail((msg, dataJSON) -> {
+                Log.d(TAG, msg);
+                toast.fail("登录已过期!");
+                new SharedDataUtil(this).cleanToken();
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,21 +56,25 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkLogin() {
-        checkLoginRequest
-                .then((call, response) -> {
-                    new ResponseUtil(response)
-                            .fail((msg, dataJSON) -> {
-                                Log.d(TAG, msg);
-                                toast.fail("登录已过期!");
-                                new SharedDataUtil(this).cleanToken();
-                            })
-                            .handle();
-                })
-                .error((call, e) -> {
-                    e.printStackTrace();
-                    toast.error("网络异常");
-                })
-                .request();
+        if (util.getToken() != null) {
+            Request request = new Request.Builder()
+                    .url(Objects.requireNonNull(HttpUrl.parse(URL.CHECK)))
+                    .addHeader("token", util.getToken())
+                    .build();
+
+            new RequestUtil()
+                    .setContext(this)
+                    .setRequest(request)
+                    .setCallback(checkLoginCallback)
+                    .error((error, e) -> {
+                        e.printStackTrace();
+                        runOnUiThread(() -> {
+                            toast.error("获取数据失败");
+                        });
+                    })
+                    .async();
+        }
+
     }
 
     private void initParams() {
@@ -77,8 +91,8 @@ public class MainActivity extends AppCompatActivity {
                 return fragments.size();
             }
         });
-        checkLoginRequest = new RequestUtil(this).get().url(URL.CHECK).setToken();
         toast = new ImageTextToast(this);
+        util = new SharedDataUtil(this);
     }
 
     private void initBottomNav() {

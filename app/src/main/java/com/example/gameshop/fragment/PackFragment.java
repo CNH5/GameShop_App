@@ -7,12 +7,15 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
+import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import com.alibaba.fastjson.JSONObject;
 import com.example.gameshop.R;
 import com.example.gameshop.activity.GameActivity;
 import com.example.gameshop.activity.OrderSubmitActivity;
@@ -21,11 +24,10 @@ import com.example.gameshop.config.URL;
 import com.example.gameshop.pojo.RecyclePackGame;
 import com.example.gameshop.toast.ImageTextToast;
 import com.example.gameshop.utils.RequestUtil;
-import com.example.gameshop.utils.ResponseUtil;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+import com.example.gameshop.utils.CallBackUtil;
+import com.example.gameshop.utils.SharedDataUtil;
+import okhttp3.*;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -39,25 +41,83 @@ public class PackFragment extends Fragment implements View.OnClickListener {
     private static final String TAG = "PackFragment";
     private List<RecyclePackGame> games;
     private RecyclerView lvPackGameList;
-    // 获取游戏的请求
-    private RequestUtil getGameListRequest;
-    // 全选的请求
-    private RequestUtil selectedAllRequest;
-    // 删除选中的请求
-    private RequestUtil selectedDeleteRequest;
     private ImageTextToast toast;
     private ImageView allSelectedIcon;
     private TextView totalPriceTextView;
     private TextView countTextView;
     private TextView manageBtText;
+    private SwipeRefreshLayout swipe;
     private View gameManagerBt;
     private View settlementView;
     private View manageView;
+    private View recycleSwitchBt;
+    private View buySwitchBt;
+    private TextView recycleSwitchTextView;
+    private TextView buySwitchTextView;
+    private TextView settlementBtText;
     private boolean isAllSelected;
     private boolean isManageMode;
     private boolean isRecycle = true;
     private PackGameAdapter adapter;
+    private SharedDataUtil util;
 
+    private final CallBackUtil deleteGameCallback = new CallBackUtil()
+            .success((msg, dataJSON) -> {
+                Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
+                    toast.success(msg);
+                });
+                adapter.removeSelected();
+            })
+            .fail((msg, dataJSON) -> {
+                Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
+                    toast.fail(msg);
+                });
+            })
+            .error((msg, dataJSON) -> {
+                Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
+                    toast.error(msg);
+                });
+            });
+
+    private final CallBackUtil getGameCallback = new CallBackUtil()
+            .success((msg, data) -> {
+                games = JSONObject.parseArray(data, RecyclePackGame.class);
+                setAdapter();
+                initView();
+
+                if (swipe != null) {
+                    swipe.setRefreshing(false);
+                }
+            })
+            .fail((msg, dataJSON) -> {
+                Log.w(TAG, "fail: " + msg);
+                Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
+                    toast.fail(msg);
+                });
+            })
+            .error((msg, dataJSON) -> {
+                Log.e(TAG, "error: " + msg);
+                Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
+                    toast.error(msg);
+                });
+            });
+
+    private final CallBackUtil selectedAllCallback = new CallBackUtil()
+            .success((msg, data) -> {
+                Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
+                    adapter.selectedAll(isAllSelected = !isAllSelected);
+                });
+            })
+            .fail((msg, data) -> {
+                Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
+                    toast.fail(msg);
+                });
+            })
+            .error((msg, data) -> {
+                Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
+                    toast.error(msg);
+                });
+            });
 
     public PackFragment() {
         // Required empty public constructor
@@ -72,12 +132,34 @@ public class PackFragment extends Fragment implements View.OnClickListener {
         super.onCreate(savedInstanceState);
         initParams();
         getGameList();
-        initCountText();
     }
 
     // 获取回收袋中的游戏列表
     void getGameList() {
-        getGameListRequest.addQueryParameter("type", getType()).request();
+        if (util.notLogin()){
+
+        } else {
+            HttpUrl url = Objects.requireNonNull(HttpUrl.parse(URL.PACK_GAMES_LIST))
+                    .newBuilder()
+                    .addQueryParameter("account", util.getAccount())
+                    .addQueryParameter("type", getType())
+                    .build();
+
+            Request request = new Request.Builder().url(url).addHeader("token", util.getToken()).build();
+
+            new RequestUtil()
+                    .setContext(getActivity())
+                    .setRequest(request)
+                    .setCallback(getGameCallback)
+                    .error((error, e) -> {
+                        e.printStackTrace();
+                        Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
+                            toast.error("获取数据失败");
+                        });
+                    })
+                    .async();
+        }
+
     }
 
     @SuppressLint("SetTextI18n")
@@ -89,7 +171,11 @@ public class PackFragment extends Fragment implements View.OnClickListener {
                 isAllSelected = false;
             }
             if (game.isSelected()) {
-                count += game.getNum() * game.getNow_price();
+                if (isRecycle) {
+                    count += game.getNum() * (game.getNow_price() - 15);
+                } else {
+                    count += game.getNum() * game.getNow_price();
+                }
             }
         }
 
@@ -100,17 +186,15 @@ public class PackFragment extends Fragment implements View.OnClickListener {
         });
     }
 
-    void initCountText() {
+    void initTransactionText() {
         countTextView.setText(isRecycle ? "预计可获得" : "合计：");
+        settlementBtText.setText(isRecycle ? "下单购买" : "下单回收");
     }
 
     // 设置参数
     private void initParams() {
         toast = new ImageTextToast(getActivity());
-
-        initSelectedAllRequest();
-        initGetGameListResponse();
-        initSelectedDeleteRequest();
+        util = new SharedDataUtil(Objects.requireNonNull(getActivity()));
     }
 
     @SuppressLint("SetTextI18n")
@@ -127,7 +211,11 @@ public class PackFragment extends Fragment implements View.OnClickListener {
                 setAllSelectedIcon();
                 double count = 0;
                 for (RecyclePackGame game : selected) {
-                    count += game.getNum() * game.getNow_price();
+                    if (isRecycle) {
+                        count += game.getNum() * (game.getNow_price() - 15);
+                    } else {
+                        count += game.getNum() * game.getNow_price();
+                    }
                 }
                 totalPriceTextView.setText("" + count);
             });
@@ -152,13 +240,29 @@ public class PackFragment extends Fragment implements View.OnClickListener {
         manageBtText = view.findViewById(R.id.manage_bt_text);
         settlementView = view.findViewById(R.id.settlement_area);
         manageView = view.findViewById(R.id.manage_area);
+        swipe = view.findViewById(R.id.swipe);
+        buySwitchBt = view.findViewById(R.id.buy_switch);
+        recycleSwitchBt = view.findViewById(R.id.recycle_switch);
+        recycleSwitchTextView = view.findViewById(R.id.recycle_switch_text);
+        buySwitchTextView = view.findViewById(R.id.buy_switch_text);
+        settlementBtText = view.findViewById(R.id.settlement_bt_text);
+        NestedScrollView scrollView = view.findViewById(R.id.scrollView);
 
         gameManagerBt.setOnClickListener(this);
+        recycleSwitchBt.setOnClickListener(this);
+        buySwitchBt.setOnClickListener(this);
         view.findViewById(R.id.all_selected_bt).setOnClickListener(this);
         view.findViewById(R.id.settlement_bt).setOnClickListener(this);
         view.findViewById(R.id.add_favorite_bt).setOnClickListener(this);
         view.findViewById(R.id.delete_game_bt).setOnClickListener(this);
 
+        initTransactionText();
+        swipe.setColorSchemeResources(R.color.blue);
+        // 防止下拉刷新组件和滑动组件冲突
+        scrollView.setOnScrollChangeListener((View.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+            swipe.setEnabled(scrollY == 0);
+        });
+        swipe.setOnRefreshListener(this::getGameList);
         return view;
     }
 
@@ -180,26 +284,67 @@ public class PackFragment extends Fragment implements View.OnClickListener {
         } else if (vid == R.id.delete_game_bt) {
             // 删除按钮
             deleteGame();
+        } else if (vid == R.id.recycle_switch) {
+            if (!isRecycle) {
+                isRecycle = true;
+                setType();
+                getGameList();
+            }
+        } else if (vid == R.id.buy_switch) {
+            if (isRecycle) {
+                isRecycle = false;
+                setType();
+                getGameList();
+            }
         }
     }
 
     private void addFavorite() {
-
+        toast.error("暂未完成~");
     }
 
     // 执行全选操作
     private void selectedAll() {
-        selectedAllRequest
-                .addQueryParameter("type", getType())
-                .addQueryParameter("selected", !isAllSelected)
-                .request();
+        FormBody form = new FormBody
+                .Builder()
+                .add("account", util.getAccount())
+                .add("type", getType())
+                .add("selected", JSONObject.toJSONString(!isAllSelected))
+                .build();
+
+        Request request = new Request.Builder()
+                .url(Objects.requireNonNull(HttpUrl.parse(URL.PACK_ALL_SELECTED)))
+                .addHeader("token", util.getToken())
+                .post(form)
+                .build();
+
+        new RequestUtil()
+                .setContext(getActivity())
+                .setRequest(request)
+                .setCallback(selectedAllCallback)
+                .error((call, e) -> {
+                    e.printStackTrace();
+                    Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
+                        toast.error("请求出错");
+                    });
+                }).async();
     }
 
     private void settlement() {
         if (adapter.getSelectedGames().size() == 0) {
             toast.fail("还没有选中游戏哦~");
         } else {
-            Intent intent = new Intent(getActivity(), OrderSubmitActivity.class);
+            // 传递选中的游戏id给结算界面
+            ArrayList<Long> idList = new ArrayList<>();
+            ArrayList<Integer> numList = new ArrayList<>();
+            for (RecyclePackGame game : adapter.getSelectedGames()) {
+                idList.add(game.getId());
+                numList.add(game.getNum());
+            }
+            Intent intent = new Intent(getActivity(), OrderSubmitActivity.class)
+                    .putExtra("type", getType())
+                    .putExtra("id", JSONObject.toJSONString(idList))
+                    .putExtra("num", JSONObject.toJSONString(numList));
             Objects.requireNonNull(getActivity()).startActivityForResult(intent, OrderSubmitActivity.CODE);
         }
     }
@@ -213,10 +358,27 @@ public class PackFragment extends Fragment implements View.OnClickListener {
             for (RecyclePackGame game : adapter.getSelectedGames()) {
                 idList.add(game.getId());
             }
-            selectedDeleteRequest
-                    .addFormParameter("type", getType())
-                    .addFormParameter("idList", idList)
-                    .request();
+            FormBody form = new FormBody
+                    .Builder()
+                    .add("account", util.getAccount())
+                    .add("type", getType())
+                    .add("idList", JSONObject.toJSONString(idList))
+                    .build();
+
+            Request request = new Request.Builder()
+                    .url(Objects.requireNonNull(HttpUrl.parse(URL.PACK_DELETE)))
+                    .addHeader("token", util.getToken())
+                    .post(form)
+                    .build();
+
+            new RequestUtil()
+                    .setContext(getActivity())
+                    .setRequest(request)
+                    .setCallback(deleteGameCallback)
+                    .error((call, e) -> {
+                        e.printStackTrace();
+                        toast.error("请求失败");
+                    }).async();
         }
     }
 
@@ -243,116 +405,28 @@ public class PackFragment extends Fragment implements View.OnClickListener {
         }
     }
 
+    private void setType() {
+        if (isRecycle) {
+            buySwitchTextView.setTextColor(Color.parseColor("#909399"));
+            buySwitchBt.setBackgroundColor(Color.WHITE);
+
+            recycleSwitchTextView.setTextColor(Color.WHITE);
+            recycleSwitchBt.setBackgroundResource(R.drawable.shape_corner6);
+            countTextView.setText("预计可获得");
+            settlementBtText.setText("下单购买");
+
+        } else {
+            recycleSwitchTextView.setTextColor(Color.parseColor("#909399"));
+            recycleSwitchBt.setBackgroundColor(Color.WHITE);
+
+            buySwitchTextView.setTextColor(Color.WHITE);
+            buySwitchBt.setBackgroundResource(R.drawable.shape_corner6);
+            countTextView.setText("合计：");
+            settlementBtText.setText("下单回收");
+        }
+    }
+
     private String getType() {
         return isRecycle ? "回收" : "购买";
-    }
-
-    private void initSelectedAllRequest() {
-        ResponseUtil requestUtil = new ResponseUtil()
-                .afterSuccess(() -> {
-                    Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
-                        adapter.selectedAll(isAllSelected = !isAllSelected);
-                    });
-                })
-                .fail((msg, dataJSON) -> {
-                    Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
-                        toast.fail(msg);
-                    });
-                })
-                .error((msg, dataJSON) -> {
-                    Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
-                        toast.error(msg);
-                    });
-                });
-
-        selectedAllRequest = new RequestUtil(getActivity())
-                .url(URL.PACK_ALL_SELECTED)
-                .post()
-                .setToken()
-                .then((call, response) -> {
-                    requestUtil.setResponse(response).handle();
-                })
-                .error((call, e) -> {
-                    e.printStackTrace();
-                    toast.error("请求失败");
-                });
-    }
-
-    private void initGetGameListResponse() {
-        ResponseUtil responseUtil = new ResponseUtil()
-                .success((msg, dataJSON) -> {
-                    Type type = new TypeToken<List<RecyclePackGame>>() {
-                    }.getType();
-
-                    games = new Gson().fromJson(dataJSON, type);
-                    setAdapter();
-                    initView();
-                })
-                .fail((msg, dataJSON) -> {
-                    Log.w(TAG, "fail: " + msg);
-                    Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
-                        toast.fail(msg);
-                    });
-                })
-                .error((msg, dataJSON) -> {
-                    Log.e(TAG, "error: " + msg);
-                    Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
-                        toast.error(msg);
-                    });
-                });
-
-        getGameListRequest = new RequestUtil(getActivity())
-                .url(URL.PACK_GAMES_LIST)
-                .get()
-                .setToken()
-                .then((call, response) -> {
-                    responseUtil.setResponse(response).handle();
-                })
-                .error((call, e) -> {
-                    Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
-                        toast.fail("网络异常");
-                    });
-                    e.printStackTrace();
-                });
-    }
-
-    void initSelectedDeleteRequest() {
-        ResponseUtil responseUtil = new ResponseUtil()
-                .success((msg, dataJSON) -> {
-                    Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
-                        toast.success(msg);
-                    });
-                })
-                .afterSuccess(() -> {
-                    Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
-                        for (Integer position : adapter.getSelectedPosition()) {
-                            adapter.remove(position);
-                        }
-                    });
-                })
-                .fail((msg, dataJSON) -> {
-                    Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
-                        toast.fail(msg);
-                    });
-                })
-                .error((msg, dataJSON) -> {
-                    Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
-                        toast.error(msg);
-                    });
-                });
-
-        selectedDeleteRequest = new RequestUtil(getActivity())
-                .url(URL.PACK_DELETE)
-                .post()
-                .setToken()
-                .then((call, response) -> {
-                    responseUtil.setResponse(response).handle();
-                })
-                .error((call, e) -> {
-                    Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
-                        toast.fail("网络异常");
-                    });
-                    e.printStackTrace();
-                });
     }
 }
