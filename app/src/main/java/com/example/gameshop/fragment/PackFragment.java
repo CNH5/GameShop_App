@@ -24,7 +24,7 @@ import com.example.gameshop.config.URL;
 import com.example.gameshop.pojo.RecyclePackGame;
 import com.example.gameshop.toast.ImageTextToast;
 import com.example.gameshop.utils.RequestUtil;
-import com.example.gameshop.utils.CallBackUtil;
+import com.example.gameshop.utils.CallUtil;
 import com.example.gameshop.utils.SharedDataUtil;
 import okhttp3.*;
 
@@ -61,7 +61,7 @@ public class PackFragment extends Fragment implements View.OnClickListener {
     private PackGameAdapter adapter;
     private SharedDataUtil util;
 
-    private final CallBackUtil deleteGameCallback = new CallBackUtil()
+    private final CallUtil deleteGameCallback = new CallUtil()
             .success((msg, dataJSON) -> {
                 Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
                     toast.success(msg);
@@ -79,7 +79,7 @@ public class PackFragment extends Fragment implements View.OnClickListener {
                 });
             });
 
-    private final CallBackUtil getGameCallback = new CallBackUtil()
+    private final CallUtil getGameCallback = new CallUtil()
             .success((msg, data) -> {
                 games = JSONObject.parseArray(data, RecyclePackGame.class);
                 setAdapter();
@@ -102,7 +102,7 @@ public class PackFragment extends Fragment implements View.OnClickListener {
                 });
             });
 
-    private final CallBackUtil selectedAllCallback = new CallBackUtil()
+    private final CallUtil selectedAllCallback = new CallUtil()
             .success((msg, data) -> {
                 Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
                     adapter.selectedAll(isAllSelected = !isAllSelected);
@@ -136,8 +136,8 @@ public class PackFragment extends Fragment implements View.OnClickListener {
 
     // 获取回收袋中的游戏列表
     void getGameList() {
-        if (util.notLogin()){
-
+        if (util.notLogin()) {
+            // 设置成中间有一个登录按钮的样式
         } else {
             HttpUrl url = Objects.requireNonNull(HttpUrl.parse(URL.PACK_GAMES_LIST))
                     .newBuilder()
@@ -145,10 +145,9 @@ public class PackFragment extends Fragment implements View.OnClickListener {
                     .addQueryParameter("type", getType())
                     .build();
 
-            Request request = new Request.Builder().url(url).addHeader("token", util.getToken()).build();
+            Request request = new Request.Builder().url(url).get().addHeader("token", util.getToken()).build();
 
-            new RequestUtil()
-                    .setContext(getActivity())
+            new RequestUtil(getActivity())
                     .setRequest(request)
                     .setCallback(getGameCallback)
                     .error((error, e) -> {
@@ -186,9 +185,10 @@ public class PackFragment extends Fragment implements View.OnClickListener {
         });
     }
 
+    @SuppressLint("SetTextI18n")
     void initTransactionText() {
         countTextView.setText(isRecycle ? "预计可获得" : "合计：");
-        settlementBtText.setText(isRecycle ? "下单购买" : "下单回收");
+        settlementBtText.setText("下单" + getType());
     }
 
     // 设置参数
@@ -318,8 +318,7 @@ public class PackFragment extends Fragment implements View.OnClickListener {
                 .post(form)
                 .build();
 
-        new RequestUtil()
-                .setContext(getActivity())
+        new RequestUtil(getActivity())
                 .setRequest(request)
                 .setCallback(selectedAllCallback)
                 .error((call, e) -> {
@@ -371,8 +370,7 @@ public class PackFragment extends Fragment implements View.OnClickListener {
                     .post(form)
                     .build();
 
-            new RequestUtil()
-                    .setContext(getActivity())
+            new RequestUtil(getActivity())
                     .setRequest(request)
                     .setCallback(deleteGameCallback)
                     .error((call, e) -> {
@@ -412,8 +410,6 @@ public class PackFragment extends Fragment implements View.OnClickListener {
 
             recycleSwitchTextView.setTextColor(Color.WHITE);
             recycleSwitchBt.setBackgroundResource(R.drawable.shape_corner6);
-            countTextView.setText("预计可获得");
-            settlementBtText.setText("下单购买");
 
         } else {
             recycleSwitchTextView.setTextColor(Color.parseColor("#909399"));
@@ -421,9 +417,8 @@ public class PackFragment extends Fragment implements View.OnClickListener {
 
             buySwitchTextView.setTextColor(Color.WHITE);
             buySwitchBt.setBackgroundResource(R.drawable.shape_corner6);
-            countTextView.setText("合计：");
-            settlementBtText.setText("下单回收");
         }
+        initTransactionText();
     }
 
     private String getType() {

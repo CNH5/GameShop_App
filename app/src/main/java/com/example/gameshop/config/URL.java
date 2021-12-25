@@ -10,7 +10,9 @@ public class URL {
     // 后端图片地址
     public static final String IMAGE = BASE + "/image/";
     // 获取游戏列表
-    public static final String GAME_LIST = BASE + "/game/query";
+    public static final String GAME_QUERY = BASE + "/game/query";
+    // 根据id获取游戏信息
+    public static final String GAME_LIST = BASE + "/game/list";
     // 获取游戏详细信息
     public static final String GAME_INFO = BASE + "/game/info/";
     // 检验token

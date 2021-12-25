@@ -19,7 +19,7 @@ import com.example.gameshop.config.URL;
 import com.example.gameshop.pojo.RecyclePackGame;
 import com.example.gameshop.toast.ImageTextToast;
 import com.example.gameshop.utils.RequestUtil;
-import com.example.gameshop.utils.CallBackUtil;
+import com.example.gameshop.utils.CallUtil;
 import com.example.gameshop.utils.SharedDataUtil;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
@@ -101,7 +101,12 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
     void gameItemSelected(int position) {
         changeItem(position, GAME_SELECTED_SIGNAL);
         // 点击选中按钮
-        CallBackUtil selectedGameCallback = new CallBackUtil()
+        CallUtil selectedGameCallback = new CallUtil()
+                .success((msg, data) -> {
+                    if (onSelectedGamesChange != null) {
+                        onSelectedGamesChange.onchange(selectedGames);
+                    }
+                })
                 .fail((msg, dataJSON) -> {
                     ((Activity) mContext).runOnUiThread(() -> {
                         toast.fail(msg);
@@ -128,8 +133,7 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
                 .post(form)
                 .build();
 
-        new RequestUtil()
-                .setContext(mContext)
+        new RequestUtil(mContext)
                 .setRequest(request)
                 .setCallback(selectedGameCallback)
                 .error((call, e) -> {
@@ -176,7 +180,7 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
         numObject.put("id", games.get(position).getId());
         numObject.put("num", num);
 
-        CallBackUtil numUpdateCallback = new CallBackUtil()
+        CallUtil numUpdateCallback = new CallUtil()
                 .success((msg, data) -> {
                     // 修改了选中的游戏的数量
                     if (onSelectedGamesChange != null && games.get(position).isSelected()) {
@@ -211,8 +215,7 @@ public class PackGameAdapter extends RecyclerView.Adapter<PackGameAdapter.ViewHo
                 .post(form)
                 .build();
 
-        new RequestUtil()
-                .setContext(mContext)
+        new RequestUtil(mContext)
                 .setRequest(request)
                 .setCallback(numUpdateCallback)
                 .error((call, e) -> {

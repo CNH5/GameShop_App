@@ -1,7 +1,5 @@
 package com.example.gameshop.utils;
 
-import android.content.Context;
-import android.util.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import okhttp3.Response;
@@ -15,7 +13,7 @@ import java.io.IOException;
  * @author sheng
  * @date 2021/12/5 15:04
  */
-public class CallBackUtil {
+public class CallUtil {
     private Response response;
     private Success success;
     private Fail fail;
@@ -33,15 +31,15 @@ public class CallBackUtil {
         void onError(String msg, String data);
     }
 
-    public CallBackUtil() {
+    public CallUtil() {
 
     }
 
-    public CallBackUtil(Response response) {
+    public CallUtil(Response response) {
         this.response = response;
     }
 
-    public CallBackUtil setResponse(Response response) {
+    public CallUtil setResponse(Response response) {
         this.response = response;
         return this;
     }
@@ -49,7 +47,7 @@ public class CallBackUtil {
     /**
      * 设置当后端返回code为success时执行的操作
      */
-    public CallBackUtil success(Success success) {
+    public CallUtil success(Success success) {
         this.success = success;
         return this;
     }
@@ -57,7 +55,7 @@ public class CallBackUtil {
     /**
      * 设置当后端返回code为fail时执行的操作
      */
-    public CallBackUtil fail(Fail fail) {
+    public CallUtil fail(Fail fail) {
         this.fail = fail;
         return this;
     }
@@ -65,7 +63,7 @@ public class CallBackUtil {
     /**
      * 设置当后端返回code为error时执行的操作
      */
-    public CallBackUtil error(Error error) {
+    public CallUtil error(Error error) {
         this.error = error;
         return this;
     }

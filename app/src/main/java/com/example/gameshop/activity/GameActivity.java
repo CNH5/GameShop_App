@@ -22,7 +22,7 @@ import com.example.gameshop.pojo.Game;
 import com.example.gameshop.popupWindow.RecyclePopupWindow;
 import com.example.gameshop.toast.ImageTextToast;
 import com.example.gameshop.utils.RequestUtil;
-import com.example.gameshop.utils.CallBackUtil;
+import com.example.gameshop.utils.CallUtil;
 import com.example.gameshop.utils.SharedDataUtil;
 import com.youth.banner.Banner;
 import com.youth.banner.BannerConfig;
@@ -137,7 +137,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
 
     // 获取数据
     private void setGameInfo(AfterGetDataSuccess after) {
-        CallBackUtil getGameCallback = new CallBackUtil()
+        CallUtil getGameCallback = new CallUtil()
                 .success((msg, data) -> {
                     // 设置游戏信息
                     game = JSONObject.parseObject(data, Game.class);
@@ -162,9 +162,8 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
                 });
 
         Request request = new Request.Builder().url(URL.GAME_INFO + id).build();
-        new RequestUtil()
+        new RequestUtil(this)
                 .setRequest(request)
-                .setContext(this)
                 .setCallback(getGameCallback)
                 .error((error, e) -> {
                     e.printStackTrace();
@@ -258,7 +257,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
                 .addHeader("token", util.getToken())
                 .build();
 
-        CallBackUtil addPackCalledBack = new CallBackUtil()
+        CallUtil addPackCalledBack = new CallUtil()
                 .success((msg, data) -> {
                     runOnUiThread(() -> {
                         toast.success(msg);
@@ -278,8 +277,7 @@ public class GameActivity extends AppCompatActivity implements View.OnClickListe
                     Log.e(TAG, msg + ": " + data);
                 });
 
-        new RequestUtil()
-                .setContext(this)
+        new RequestUtil(this)
                 .setRequest(request)
                 .setCallback(addPackCalledBack)
                 .error((error, e) -> {

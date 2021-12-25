@@ -2,7 +2,6 @@ package com.example.gameshop.fragment;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Looper;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.fragment.app.Fragment;
@@ -12,10 +11,6 @@ import android.view.ViewGroup;
 import com.example.gameshop.R;
 import com.example.gameshop.activity.ConfigActivity;
 import com.example.gameshop.activity.LoginActivity;
-import com.example.gameshop.config.URL;
-import com.example.gameshop.toast.ImageTextToast;
-import com.example.gameshop.utils.RequestUtil;
-import com.example.gameshop.utils.CallBackUtil;
 import com.example.gameshop.utils.SharedDataUtil;
 
 import java.util.Objects;

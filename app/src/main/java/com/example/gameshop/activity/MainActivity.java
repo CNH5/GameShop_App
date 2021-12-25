@@ -17,7 +17,7 @@ import com.example.gameshop.fragment.ServiceFragment;
 import com.example.gameshop.fragment.UserFragment;
 import com.example.gameshop.toast.ImageTextToast;
 import com.example.gameshop.utils.RequestUtil;
-import com.example.gameshop.utils.CallBackUtil;
+import com.example.gameshop.utils.CallUtil;
 import com.example.gameshop.utils.SharedDataUtil;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import okhttp3.HttpUrl;
@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageTextToast toast;
     private SharedDataUtil util;
 
-    private final CallBackUtil checkLoginCallback = new CallBackUtil()
+    private final CallUtil checkLoginCallback = new CallUtil()
             .fail((msg, dataJSON) -> {
                 Log.d(TAG, msg);
                 toast.fail("登录已过期!");
@@ -57,13 +57,17 @@ public class MainActivity extends AppCompatActivity {
 
     private void checkLogin() {
         if (util.getToken() != null) {
+            HttpUrl url = Objects.requireNonNull(HttpUrl.parse(URL.CHECK))
+                    .newBuilder()
+                    .addQueryParameter("account", util.getAccount())
+                    .build();
+
             Request request = new Request.Builder()
-                    .url(Objects.requireNonNull(HttpUrl.parse(URL.CHECK)))
+                    .url(url)
                     .addHeader("token", util.getToken())
                     .build();
 
-            new RequestUtil()
-                    .setContext(this)
+            new RequestUtil(this)
                     .setRequest(request)
                     .setCallback(checkLoginCallback)
                     .error((error, e) -> {

@@ -15,7 +15,7 @@ import com.example.gameshop.config.URL;
 import com.example.gameshop.R;
 import com.example.gameshop.toast.ImageTextToast;
 import com.example.gameshop.utils.RequestUtil;
-import com.example.gameshop.utils.CallBackUtil;
+import com.example.gameshop.utils.CallUtil;
 import com.example.gameshop.utils.SharedDataUtil;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
@@ -33,7 +33,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
     private boolean passwordVisible = false;
     private ImageView iSwitch;
 
-    private final CallBackUtil loginCallback = new CallBackUtil()
+    private final CallUtil loginCallback = new CallUtil()
             .success((msg, dataJSON) -> {
                 new SharedDataUtil(this).setAccount(accountET.getText().toString());
                 // 给上一级页面返回登录成功
@@ -139,8 +139,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                 .post(form)
                 .build();
 
-        new RequestUtil()
-                .setContext(this)
+        new RequestUtil(this)
                 .setRequest(request)
                 .setCallback(loginCallback)
                 .error((call, e) -> {

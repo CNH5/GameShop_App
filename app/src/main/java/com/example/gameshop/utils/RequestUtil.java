@@ -16,21 +16,20 @@ import java.io.IOException;
  */
 public class RequestUtil {
     private Request request;
-    private CallBackUtil callback;
-    private Context mContext;
+    private CallUtil callback;
+    private final Context mContext;
     private Error error;
+
+    public RequestUtil(Context mContext) {
+        this.mContext = mContext;
+    }
 
     public interface Error {
         void catchError(Call call, IOException e);
     }
 
-    public RequestUtil setCallback(CallBackUtil callback) {
+    public RequestUtil setCallback(CallUtil callback) {
         this.callback = callback;
-        return this;
-    }
-
-    public RequestUtil setContext(Context context) {
-        mContext = context;
         return this;
     }
 

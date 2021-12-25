@@ -15,6 +15,7 @@ import com.example.gameshop.config.URL;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author sheng
@@ -24,11 +25,13 @@ public class OrderGameAdapter extends RecyclerView.Adapter<OrderGameAdapter.View
     private final List<Map<String, Object>> info;
     private final Context mContext;
     private final List<Integer> numList;
+    private final String type;
 
-    public OrderGameAdapter(List<Map<String, Object>> info, Context mContext, List<Integer> numList) {
+    public OrderGameAdapter(List<Map<String, Object>> info, Context mContext, List<Integer> numList, String type) {
         this.info = info;
         this.mContext = mContext;
         this.numList = numList;
+        this.type = type;
     }
 
     @NonNull
@@ -45,6 +48,11 @@ public class OrderGameAdapter extends RecyclerView.Adapter<OrderGameAdapter.View
         Glide.with(mContext).load(URL.IMAGE + (data.get("cover_image") == null ? "notfound.jpg" : data.get("cover_image"))).into(holder.coverImageView);
         holder.gameNameTextView.setText(String.valueOf(data.get("name")));
         holder.gamePriceTextView.setText(String.valueOf(data.get("price")));
+        if ("回收".equals(type)) {
+            holder.gamePriceTextView.setText(String.valueOf(Double.parseDouble(Objects.requireNonNull(data.get("price")).toString()) - 15));
+        } else if ("购买".equals(type)) {
+            holder.gamePriceTextView.setText(String.valueOf(Double.parseDouble(Objects.requireNonNull(data.get("price")).toString())));
+        }
         holder.gameNumTextView.setText("" + numList.get(position));
     }
 

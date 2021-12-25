@@ -16,7 +16,7 @@ import com.example.gameshop.activity.GameActivity;
 import com.example.gameshop.adapter.GameListAdapter;
 import com.example.gameshop.pojo.Game;
 import com.example.gameshop.toast.ImageTextToast;
-import com.example.gameshop.utils.CallBackUtil;
+import com.example.gameshop.utils.CallUtil;
 import com.example.gameshop.utils.RequestUtil;
 import com.google.android.material.tabs.TabLayout;
 import okhttp3.*;
@@ -39,7 +39,7 @@ public class GameListFragment extends Fragment implements View.OnClickListener {
     private ImageTextToast toast;
     private int page = 1;
 
-    private final CallBackUtil getListCallBack = new CallBackUtil()
+    private final CallUtil getListCallBack = new CallUtil()
             .success((msg, data) -> {
 
                 this.gameList = JSONObject.parseArray(data, Game.class);
@@ -104,14 +104,13 @@ public class GameListFragment extends Fragment implements View.OnClickListener {
     }
 
     private void initList(int id) {
-        HttpUrl url = Objects.requireNonNull(HttpUrl.parse(URL.GAME_LIST))
+        HttpUrl url = Objects.requireNonNull(HttpUrl.parse(URL.GAME_QUERY))
                 .newBuilder()
                 .addQueryParameter("page", String.valueOf(page))
                 .addQueryParameter("platform", platforms[id])
                 .build();
 
-        new RequestUtil()
-                .setContext(getActivity())
+        new RequestUtil(getActivity())
                 .setRequest(new Request.Builder().url(url).build())
                 .setCallback(getListCallBack)
                 .error((error, e) -> {

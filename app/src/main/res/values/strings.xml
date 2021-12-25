@@ -60,4 +60,9 @@
     <string name="pack_delete_bt_text">删 除</string>
     <string name="pack_add_favorite_bt_text">添加到收藏</string>
     <string name="order_submit_settlement_bt_text">确认购买</string>
+    <string name="order_games_title">商品信息:</string>
+    <string name="recycle_tip_text">其中已经扣除每张15元的中介费用</string>
+    <string name="phone_number_et_hint">手机号</string>
+    <string name="location_et_hint">省、市、区及小区楼号等</string>
+    <string name="name_et_hint">名字</string>
 </resources>

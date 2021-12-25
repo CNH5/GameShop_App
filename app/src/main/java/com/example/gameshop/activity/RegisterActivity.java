@@ -14,7 +14,7 @@ import com.example.gameshop.R;
 import com.example.gameshop.config.URL;
 import com.example.gameshop.toast.ImageTextToast;
 import com.example.gameshop.utils.RequestUtil;
-import com.example.gameshop.utils.CallBackUtil;
+import com.example.gameshop.utils.CallUtil;
 import com.example.gameshop.utils.SharedDataUtil;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
@@ -32,7 +32,7 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
     private boolean passwordVisible = false;
     private ImageView iSwitch;
 
-    private final CallBackUtil registeredCallback = new CallBackUtil()
+    private final CallUtil registeredCallback = new CallUtil()
             .success((msg, dataJSON) -> {
                 new SharedDataUtil(this).setAccount(accountET.getText().toString());
                 // 给登录界面返回注册成功
@@ -109,6 +109,7 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
             finish();
         } else if (vid == R.id.password_visible_switch) {
             switchPasswordVisible(passwordVisible = !passwordVisible, iSwitch, passwordET);
+
         } else if (vid == R.id.register_bt) {
             submit();
         } else {
@@ -128,7 +129,7 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
                 .post(form)
                 .build();
 
-        new RequestUtil().setContext(this).setRequest(request).setCallback(registeredCallback).async();
+        new RequestUtil(this).setRequest(request).setCallback(registeredCallback).async();
     }
 
 }
